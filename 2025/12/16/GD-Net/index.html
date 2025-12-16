@@ -20,24 +20,33 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="Only fear can hold you back, in any direction.">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Verser_Vv">
-<meta property="og:url" content="http://example.com/index.html">
+    <meta name="description" content="摘要： 在嵌入式设备（IoT、MCU）上跑目标检测，通常面临算力与存储的双重挑战。为此，我设计了 GD_Net——一个专为边缘设备打造的超轻量级目标检测架构。它将 MCUNet (ProxylessNAS) 作为骨干网络，结合解耦头（Decoupled Head）设计，在保持检测能力的，将模型参数量压缩至 1MB 左右。   1. 项目背景 (Introduction)在无人机、物联网设备或微控">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GD_Net：仅1MB参数的超轻量级目标检测模型 (MCUNet + YOLOv3)（待补充）">
+<meta property="og:url" content="http://example.com/2025/12/16/GD-Net/index.html">
 <meta property="og:site_name" content="Verser_Vv">
-<meta property="og:description" content="Only fear can hold you back, in any direction.">
+<meta property="og:description" content="摘要： 在嵌入式设备（IoT、MCU）上跑目标检测，通常面临算力与存储的双重挑战。为此，我设计了 GD_Net——一个专为边缘设备打造的超轻量级目标检测架构。它将 MCUNet (ProxylessNAS) 作为骨干网络，结合解耦头（Decoupled Head）设计，在保持检测能力的，将模型参数量压缩至 1MB 左右。   1. 项目背景 (Introduction)在无人机、物联网设备或微控">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/output_cut.gif">
+<meta property="article:published_time" content="2025-12-15T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-16T06:55:33.911Z">
 <meta property="article:author" content="Verser_Vv">
+<meta property="article:tag" content="Deep Learning">
+<meta property="article:tag" content="Edge AI">
+<meta property="article:tag" content="MCUNet">
+<meta property="article:tag" content="Object Detection">
+<meta property="article:tag" content="YOLO">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/output_cut.gif">
 
 
-<link rel="canonical" href="http://example.com/">
+<link rel="canonical" href="http://example.com/2025/12/16/GD-Net/">
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":true,"isPost":false,"lang":"en","comments":"","permalink":"","path":"index.html","title":""}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"http://example.com/2025/12/16/GD-Net/","path":"2025/12/16/GD-Net/","title":"GD_Net：仅1MB参数的超轻量级目标检测模型 (MCUNet + YOLOv3)（待补充）"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Verser_Vv</title>
+<title>GD_Net：仅1MB参数的超轻量级目标检测模型 (MCUNet + YOLOv3)（待补充） | Verser_Vv</title>
   
 
 
@@ -84,7 +93,7 @@
 
     <a href="/" class="brand" rel="start">
       <i class="logo-line"></i>
-      <h1 class="site-title">Verser_Vv</h1>
+      <p class="site-title">Verser_Vv</p>
       <i class="logo-line"></i>
     </a>
   </div>
@@ -106,7 +115,7 @@
   
   <aside class="sidebar">
 
-    <div class="sidebar-inner sidebar-overview-active">
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
       <ul class="sidebar-nav">
         <li class="sidebar-nav-toc">
           Table of Contents
@@ -119,6 +128,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%A1%B9%E7%9B%AE%E8%83%8C%E6%99%AF-Introduction"><span class="nav-number">1.</span> <span class="nav-text">1. 项目背景 (Introduction)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3-Architecture"><span class="nav-number">2.</span> <span class="nav-text">2. 模型架构详解 (Architecture)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%F0%9F%8E%A5-%E6%95%88%E6%9E%9C%E5%B1%95%E7%A4%BA"><span class="nav-number">2.1.</span> <span class="nav-text">🎥 效果展示</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%80%A7%E8%83%BD%E8%AF%84%E4%BC%B0-Model-Summary"><span class="nav-number">3.</span> <span class="nav-text">3. 性能评估 (Model Summary)</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -166,16 +176,17 @@
 
     </div>
 
-    <div class="main-inner index posts-expand">
+    <div class="main-inner post posts-expand">
 
-    
+
+  
 
 
 <div class="post-block">
   
   
 
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
     <link itemprop="mainEntityOfPage" href="http://example.com/2025/12/16/GD-Net/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -189,13 +200,13 @@
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | Verser_Vv">
+      <meta itemprop="name" content="GD_Net：仅1MB参数的超轻量级目标检测模型 (MCUNet + YOLOv3)（待补充） | Verser_Vv">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/16/GD-Net/" class="post-title-link" itemprop="url">GD_Net：仅1MB参数的超轻量级目标检测模型 (MCUNet + YOLOv3)（待补充）</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          GD_Net：仅1MB参数的超轻量级目标检测模型 (MCUNet + YOLOv3)（待补充）
+        </h1>
 
         <div class="post-meta-container">
           <div class="post-meta">
@@ -227,8 +238,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody">
-          <blockquote>
+    <div class="post-body" itemprop="articleBody"><blockquote>
 <p><strong>摘要：</strong> 在嵌入式设备（IoT、MCU）上跑目标检测，通常面临算力与存储的双重挑战。为此，我设计了 <strong>GD_Net</strong>——一个专为边缘设备打造的超轻量级目标检测架构。它将 <strong>MCUNet (ProxylessNAS)</strong> 作为骨干网络，结合解耦头（Decoupled Head）设计，在保持检测能力的，将模型参数量压缩至 <strong>1MB</strong> 左右。</p>
 </blockquote>
 <hr>
@@ -298,7 +308,6 @@ Non-trainable params          : 0
 ======================================================================
 </code></pre>
 
-      
     </div>
 
     
@@ -306,176 +315,29 @@ Non-trainable params          : 0
     
 
     <footer class="post-footer">
-        <div class="post-eof"></div>
-      
+          <div class="post-tags">
+              <a href="/tags/Deep-Learning/" rel="tag"># Deep Learning</a>
+              <a href="/tags/Object-Detection/" rel="tag"># Object Detection</a>
+              <a href="/tags/Edge-AI/" rel="tag"># Edge AI</a>
+              <a href="/tags/YOLO/" rel="tag"># YOLO</a>
+              <a href="/tags/MCUNet/" rel="tag"># MCUNet</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/12/15/Drone-10k/" rel="prev" title="Drone-10k：一个包含1万张高清目标的无人机检测数据集">
+                  <i class="fa fa-angle-left"></i> Drone-10k：一个包含1万张高清目标的无人机检测数据集
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
     </footer>
   </article>
 </div>
 
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2025/12/15/Drone-10k/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/mine.jpg">
-      <meta itemprop="name" content="Verser_Vv">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Verser_Vv">
-      <meta itemprop="description" content="Only fear can hold you back, in any direction.">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | Verser_Vv">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/15/Drone-10k/" class="post-title-link" itemprop="url">Drone-10k：一个包含1万张高清目标的无人机检测数据集</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">Posted on</span>
-
-      <time title="Created: 2025-12-15 00:00:00" itemprop="dateCreated datePublished" datetime="2025-12-15T00:00:00+08:00">2025-12-15</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2025-12-16 14:51:29" itemprop="dateModified" datetime="2025-12-16T14:51:29+08:00">2025-12-16</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">In</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E4%B8%AA%E4%BA%BA%E5%88%86%E4%BA%AB/" itemprop="url" rel="index"><span itemprop="name">个人分享</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <blockquote>
-<p><strong>摘要：</strong> 分享一个自制的无人机检测数据集 <strong>Drone-10k</strong>。数据量大约 <strong>10,000 张</strong>，融合了西湖大学公开数据与个人采集数据，主要包含三类无人机机型 <strong>DJI Mini、DJI Air和大疆精灵</strong>。核心亮点是<strong>目标尺寸均 &gt;16x16 像素</strong>，剔除了极小噪点。如果有需要的同学可以下载使用，希望对大家有用。</p>
-</blockquote>
-<hr>
-<h2 id="1-为什么做这个数据集？"><a href="#1-为什么做这个数据集？" class="headerlink" title="1. 为什么做这个数据集？"></a>1. 为什么做这个数据集？</h2><p>起初，这其实是我的<strong>硕士毕业设计</strong>课题——《小目标无人机检测与拦截控制研究》的一部分。在完成这个课题的过程中，我发现了一个很尴尬的现实：</p>
-<ol>
-<li><strong>现实与数据的割裂：</strong> 现实生活中，我们要防范或拦截的绝大多数都是<strong>大疆（DJI）</strong> 这种消费级无人机。</li>
-<li><strong>开源数据的匮乏：</strong> 但翻遍了市面上的公开数据集，很多都是大型客机和零散的不知名的无人机，真正包含<strong>高清大疆无人机</strong>的数据少之又少。</li>
-</ol>
-<p>为了解决这个问题，让模型真正具备实战能力，我和我的学弟学妹们，一点点采集、清洗、融合了这份数据，这里也特别感谢他们的帮助。</p>
-<h3 id="关于数据的清洗与重采样"><a href="#关于数据的清洗与重采样" class="headerlink" title="关于数据的清洗与重采样"></a>关于数据的清洗与重采样</h3><p>必须说明的是，我们原始采集的数据量其实高达 <strong>50,000 张</strong>。但在分析阶段我们发现，自采数据虽然清晰，但受限于大疆无人机设备，存在无人机型号和类别单一的问题。</p>
-<p>为了保证数据集的<strong>泛化性</strong>和<strong>平衡性</strong>，我们没有简单地堆砌数量，而是采取了一定的筛选策略：</p>
-<ol>
-<li><strong>去噪：</strong> 对自建库和西湖大学开源数据执行同样的预处理，剔除所有小于 16*16 像素的无效噪点。</li>
-<li><strong>重采样：</strong> 从自建库和西湖大学筛选后的数据库中，<strong>随机下采样（Under-sampling）</strong> 了 <strong>10,000 张</strong> 最具代表性的样本。</li>
-</ol>
-<p><strong>最终，我们得到了这份去粗取精、总量约 1万张 的 Drone-10k 数据集。</strong></p>
-<p><strong>核心特性：</strong></p>
-<ul>
-<li>📸 <strong>数据量大：</strong> 包含 <strong>10,000+</strong> 张真实场景图片。</li>
-<li>🔍 <strong>拒绝模糊：</strong> 严格筛选标准，所有标注目标的尺寸均在 <strong>16×16 像素以上</strong>（有效特征区域）。</li>
-<li>🌍 <strong>场景丰富：</strong> 涵盖天空、城市、野外、逆光等多种复杂环境。</li>
-</ul>
-<p><img src="/images/drone25k_mosaic_full_992.jpg" alt="图1 无人机数据集展示"><br><em><strong>图1：Drone-10k 数据集概览（1000张样本的密集阵列展示）。每一个方格都是一个清晰的无人机目标，而非模糊的黑点。</strong></em></p>
-<hr>
-<h2 id="2-数据可视化分析"><a href="#2-数据可视化分析" class="headerlink" title="2. 数据可视化分析"></a>2. 数据可视化分析</h2><p>为了证明数据的质量，我们对 1w 张标注数据进行了深度的统计分析。</p>
-<h3 id="2-1-目标尺寸分布：清晰可见的细节"><a href="#2-1-目标尺寸分布：清晰可见的细节" class="headerlink" title="2.1 目标尺寸分布：清晰可见的细节"></a>2.1 目标尺寸分布：清晰可见的细节</h3><p>很多检测模型（如 YOLO 系列）对微小目标（&lt;16px）极其敏感且难训练。我们将所有目标的宽(Width)和高(Height)绘制了密度散点图：</p>
-<p><img src="/images/drone_size_distribution.png" alt="目标尺寸分布图"><br><em>图2：目标尺寸分布图（密度着色）。</em></p>
-<ul>
-<li><strong>分析：</strong> 从图中可以看出，数据集中绝大多数样本都落在中等尺寸区间。虽然存在长宽比的变化，但几乎没有极小尺寸的噪点样本。这保证了卷积神经网络（CNN）能够提取到有效的纹理特征，而不仅仅是学习背景噪声。</li>
-</ul>
-<h3 id="2-2-空间分布：拒绝“中心过拟合”"><a href="#2-2-空间分布：拒绝“中心过拟合”" class="headerlink" title="2.2 空间分布：拒绝“中心过拟合”"></a>2.2 空间分布：拒绝“中心过拟合”</h3><p>为了验证拍摄时是否存在严重的偏差，我们绘制了所有目标在画面中的位置热力图：</p>
-<p><img src="/images/drone_position_heatmap.png" alt="目标位置热力图"><br><em>图3：目标位置热力图。</em></p>
-<ul>
-<li><strong>分析：</strong><ul>
-<li><strong>中心热点：</strong> 黄色区域显示存在一定的摄影师中心跟随习惯，符合真实应用场景。</li>
-<li><strong>边缘覆盖：</strong> 紫色区域广泛覆盖了画面的四周角落。这意味着数据集包含大量无人机飞出视野中心、位于边缘的困难样本。</li>
-<li><strong>结论：</strong> 使用本数据集训练的模型，将具有更好的鲁棒性，不会养成“只看画面中间”的坏习惯。</li>
-</ul>
-</li>
-</ul>
-<hr>
-<h2 id="3-数据集规格说明"><a href="#3-数据集规格说明" class="headerlink" title="3. 数据集规格说明"></a>3. 数据集规格说明</h2><table>
-<thead>
-<tr>
-<th align="left">属性</th>
-<th align="left">描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left"><strong>图片数量</strong></td>
-<td align="left">10,000 张</td>
-</tr>
-<tr>
-<td align="left"><strong>标注格式</strong></td>
-<td align="left">Pascal VOC (XML)</td>
-</tr>
-<tr>
-<td align="left"><strong>类别名称</strong></td>
-<td align="left"><code>drone</code> (单类别)</td>
-</tr>
-<tr>
-<td align="left"><strong>平均分辨率</strong></td>
-<td align="left">1920×1080 (FHD) 及以上</td>
-</tr>
-<tr>
-<td align="left"><strong>主要场景</strong></td>
-<td align="left">空对空(Air-to-Air), 地对空(Ground-to-Air)</td>
-</tr>
-</tbody></table>
-<h3 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h3><p>下载后的数据集结构如下，采用了经典的 VOC 格式，可直接用于 MMDet、Faster R-CNN、YOLO (需转换) 等框架训练：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Drone-10k/</span><br><span class="line">├── Annotations/    # 存放 .xml 标签文件</span><br><span class="line">│   ├── 000001.xml</span><br><span class="line">│   ├── 000002.xml</span><br><span class="line">│   └── ...</span><br><span class="line">├── JPEGImages/     # 存放 .jpg/.png 图片文件 (注意文件夹名通常为 JPEGImages)</span><br><span class="line">│   ├── 000001.jpg</span><br><span class="line">│   ├── 000002.jpg</span><br><span class="line">│   └── ...</span><br><span class="line">└── ImageSets/      # 训练/验证集划分文件</span><br><span class="line">    └── Main/</span><br><span class="line">        ├── train.txt  # 训练集文件索引</span><br><span class="line">        ├── val.txt    # 验证集文件索引</span><br><span class="line">        └── test.txt   # 测试集文件索引</span><br></pre></td></tr></table></figure>
-
-<h2 id="4-获取方式与致谢"><a href="#4-获取方式与致谢" class="headerlink" title="4. 获取方式与致谢"></a>4. 获取方式与致谢</h2><h3 id="📥-下载地址"><a href="#📥-下载地址" class="headerlink" title="📥 下载地址"></a>📥 下载地址</h3><ul>
-<li><strong>Google Drive 下载：</strong> <a target="_blank" rel="noopener" href="https://drive.google.com/file/d/1A4j6ZFBd3IlzgnpKcy0iVrMklLDIRta2/view?usp=drive_link">📄 点击此处下载 (Drone-10k.zip)</a></li>
-</ul>
-<h3 id="🙏-致谢与声明"><a href="#🙏-致谢与声明" class="headerlink" title="🙏 致谢与声明"></a>🙏 致谢与声明</h3><ol>
-<li><strong>同门互助：</strong> 特别感谢我的<strong>师弟师妹们</strong>，是你们在校期间协助我完成了这 <strong>50,000 张</strong> 原始数据的辛苦采集。</li>
-<li><strong>开源致谢：</strong> 感谢 <strong>西湖大学 (Westlake University)</strong> 的开源工作，本数据集融合了部分西湖大学的公开数据。</li>
-<li><strong>使用声明：</strong> 本数据集仅供学术研究与个人学习交流使用，请勿用于商业用途。</li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
 
 
 
