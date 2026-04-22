@@ -195,7 +195,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/04/22/ESP-Net/" class="post-title-link" itemprop="url">ESP-Net：在 ESP32 上手撸一个轻量级手写数字识别系统</a>
+          <a href="/2026/04/22/ESP-Net/" class="post-title-link" itemprop="url">ESP-Net：基于 ESP32 的轻量级嵌入式手写数字识别系统 design 与实现</a>
         </h2>
 
         <div class="post-meta-container">
@@ -207,7 +207,7 @@
       <span class="post-meta-item-text">Posted on</span>
       
 
-      <time title="Created: 2026-04-22 00:00:00 / Modified: 18:45:25" itemprop="dateCreated datePublished" datetime="2026-04-22T00:00:00+08:00">2026-04-22</time>
+      <time title="Created: 2026-04-22 00:00:00 / Modified: 18:53:18" itemprop="dateCreated datePublished" datetime="2026-04-22T00:00:00+08:00">2026-04-22</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -230,38 +230,36 @@
     
     <div class="post-body" itemprop="articleBody">
           <blockquote>
-<p><strong>摘要：</strong> 很多端侧 AI 项目依赖于 TensorFlow Lite Micro 等框架，但在极小内存的 MCU 上，框架本身的开销也不容忽视。<strong>ESP-Net</strong> 是一个“从零开始”的实战项目，涵盖了从 PyTorch 训练、Int8 量化到手写 C++ 推理算子并部署至 <strong>ESP32 (WT32-SC01)</strong> 触摸屏的全过程。</p>
+<p><strong>摘要：</strong> 在资源受限的微控制器（MCU）上部署深度学习模型，通常面临算力开销与内存占用的双重挑战。<strong>ESP-Net</strong> 项目展示了一套完整的端侧 AI（TinyML）落地方案。该方案摒弃了笨重的第三方推理框架，通过自主实现 C++ 推理算子及 Int8 定点量化技术，在 <strong>ESP32 (WT32-SC01)</strong> 平台上实现了高精度的实时手写数字识别。</p>
 </blockquote>
 <hr>
-<h2 id="1-项目简介-Overview"><a href="#1-项目简介-Overview" class="headerlink" title="1. 项目简介 (Overview)"></a>1. 项目简介 (Overview)</h2><p><strong>ESP-Net</strong> 旨在展示如何在资源受限的微控制器上实现高性能的神经网络推理。项目选择经典的手写数字识别（MNIST）作为切入点，但不同于简单的仿真，它提供了一个完整的硬件交互界面：用户在触摸屏上书写，ESP32 实时给出识别结果及其概率分布。</p>
-<p><strong>🌟 核心卖点：</strong></p>
+<h2 id="1-项目概述-Overview"><a href="#1-项目概述-Overview" class="headerlink" title="1. 项目概述 (Overview)"></a>1. 项目概述 (Overview)</h2><p><strong>ESP-Net</strong> 旨在验证轻量级神经网络在嵌入式端的实时推理能力。项目以经典的 MNIST 手写数字识别为任务目标，构建了从离线训练到端侧部署的全生命周期链路。</p>
+<p><strong>核心技术特性：</strong></p>
 <ul>
-<li><strong>全栈开发</strong>：从数据采集、GPU 训练到模型压缩、嵌入式固件编写。</li>
-<li><strong>自研推理引擎</strong>：不依赖三方库，手写 <code>nn_ops.cpp</code>，深入理解卷积、池化、全连接的底层实现。</li>
-<li><strong>Int8 定点量化</strong>：通过对称量化技术，将权重和激活值压缩至 8 位，极大降低内存占用。</li>
-<li><strong>交互式 UI</strong>：基于 <strong>LovyanGFX</strong> 打造酷炫的技术感界面，支持实时概率条形图展示。</li>
+<li><strong>全链路自研</strong>：涵盖模型构建、数据增强、定点量化及嵌入式驱动开发。</li>
+<li><strong>轻量化推理引擎</strong>：基于 C++ 实现底层卷积（Conv2D）、池化（Pooling）及全连接（Dense）算子，规避了框架级封装带来的冗余。</li>
+<li><strong>高性能定点化</strong>：采用对称量化（Symmetric Quantization）策略将参数压缩至 8-bit，显著降低了 Flash 占用与内存吞吐量。</li>
+<li><strong>实时交互反馈</strong>：集成 <strong>LovyanGFX</strong> 图形库，提供直观的数字化绘图区与实时类别概率分布展示。</li>
 </ul>
 <hr>
-<h2 id="2-技术架构-Architecture"><a href="#2-技术架构-Architecture" class="headerlink" title="2. 技术架构 (Architecture)"></a>2. 技术架构 (Architecture)</h2><h3 id="2-1-神经网络模型"><a href="#2-1-神经网络模型" class="headerlink" title="2.1 神经网络模型"></a>2.1 神经网络模型</h3><p>为了兼顾速度与精度，我设计了一个轻量级的 CNN 架构：<br><code>Input(28x28x1) -&gt; Conv2D(8, 3x3) -&gt; BN -&gt; ReLU -&gt; MaxPool -&gt; Conv2D(16, 3x3) -&gt; BN -&gt; ReLU -&gt; MaxPool -&gt; Flatten -&gt; Dense(64) -&gt; Dense(10)</code></p>
-<h3 id="2-2-模型训练与优化-train-mcu-py"><a href="#2-2-模型训练与优化-train-mcu-py" class="headerlink" title="2.2 模型训练与优化 (train_mcu.py)"></a>2.2 模型训练与优化 (<code>train_mcu.py</code>)</h3><ul>
-<li><strong>数据增强</strong>：引入了 ±10° 旋转、随机缩放和平移，提高模型在非标准书写下的鲁棒性。</li>
-<li><strong>权重量化</strong>：训练完成后，将 FP32 权重映射为 Int8 范围，并导出为 C 语言头文件 <code>model_weights.h</code>。</li>
+<h2 id="2-技术架构-Architecture"><a href="#2-技术架构-Architecture" class="headerlink" title="2. 技术架构 (Architecture)"></a>2. 技术架构 (Architecture)</h2><h3 id="2-1-神经网络拓扑"><a href="#2-1-神经网络拓扑" class="headerlink" title="2.1 神经网络拓扑"></a>2.1 神经网络拓扑</h3><p>系统采用针对端侧优化的轻量级 CNN 架构，确保在保证分类精度的前提下，最大限度减少乘累加（MAC）运算量：<br><code>Input(28x28x1) -&gt; Conv2D(8, 3x3) -&gt; BN -&gt; ReLU -&gt; MaxPool -&gt; Conv2D(16, 3x3) -&gt; BN -&gt; ReLU -&gt; MaxPool -&gt; Flatten -&gt; Dense(64) -&gt; Dense(10)</code></p>
+<h3 id="2-2-离线训练与压缩优化"><a href="#2-2-离线训练与压缩优化" class="headerlink" title="2.2 离线训练与压缩优化"></a>2.2 离线训练与压缩优化</h3><ul>
+<li><strong>鲁棒性增强</strong>：在训练阶段引入旋转（±10°）、缩放及平移等数据增强手段，提升模型对异形字体的泛化能力。</li>
+<li><strong>算子融合（Folded BN）</strong>：将 Batch Normalization 层参数预先融合进卷积层的权重（Weights）与偏置（Bias）中，实现推理阶段的零额外开销。</li>
 </ul>
-<h3 id="2-3-嵌入式推理实现-nn-ops-h"><a href="#2-3-嵌入式推理实现-nn-ops-h" class="headerlink" title="2.3 嵌入式推理实现 (nn_ops.h)"></a>2.3 嵌入式推理实现 (<code>nn_ops.h</code>)</h3><p>在 ESP32 端，我实现了以下核心算子：</p>
+<h3 id="2-3-嵌入式端实现"><a href="#2-3-嵌入式端实现" class="headerlink" title="2.3 嵌入式端实现"></a>2.3 嵌入式端实现</h3><p>推理核心模块 <code>nn_ops.cpp</code> 针对 ESP32 的存储特性进行了优化：</p>
 <ul>
-<li><code>nn_conv2d_same</code>：支持 Same Padding 的 3x3 卷积。</li>
-<li><code>nn_batchnorm</code>：将 BN 层参数融合进卷积层的 Scale 和 Bias 中，实现<strong>零运行时开销</strong>。</li>
-<li><code>nn_maxpool2d</code>：2x2 最大池化。</li>
-<li><code>nn_dense</code>：带 Softmax 激活的全连接层。</li>
+<li><strong>内存复用</strong>：通过双缓冲（Double Buffer）机制管理激活值，将峰值内存控制在 31KB 以内。</li>
+<li><strong>高效卷积</strong>：实现了支持 Same Padding 的定点卷积算法。</li>
 </ul>
 <hr>
-<h2 id="3-性能表现-Benchmarks"><a href="#3-性能表现-Benchmarks" class="headerlink" title="3. 性能表现 (Benchmarks)"></a>3. 性能表现 (Benchmarks)</h2><h3 id="3-1-训练效果"><a href="#3-1-训练效果" class="headerlink" title="3.1 训练效果"></a>3.1 训练效果</h3><p>模型在 MNIST 测试集上表现稳健，通过混淆矩阵可以看到其对易混淆数字（如 4 和 9）的识别处理得非常好。</p>
+<h2 id="3-实验结果与性能评估-Benchmarks"><a href="#3-实验结果与性能评估-Benchmarks" class="headerlink" title="3. 实验结果与性能评估 (Benchmarks)"></a>3. 实验结果与性能评估 (Benchmarks)</h2><h3 id="3-1-精度分析"><a href="#3-1-精度分析" class="headerlink" title="3.1 精度分析"></a>3.1 精度分析</h3><p>模型在 MNIST 测试集上表现优异。通过混淆矩阵分析，系统对相似字符（如 4&#x2F;9, 5&#x2F;6）具备良好的辨析能力。</p>
 <table>
 <thead>
 <tr>
-<th align="center">训练曲线</th>
+<th align="center">训练收敛曲线</th>
 <th align="center">混淆矩阵</th>
-<th align="center">错误样本分析</th>
+<th align="center">错误样本聚类</th>
 </tr>
 </thead>
 <tbody><tr>
@@ -270,24 +268,26 @@
 <td align="center"><img src="/images/esp_net/wrong_samples.png" alt="错误分析"></td>
 </tr>
 </tbody></table>
-<h3 id="3-2-硬件推理指标-测试平台-WT32-SC01"><a href="#3-2-硬件推理指标-测试平台-WT32-SC01" class="headerlink" title="3.2 硬件推理指标 (测试平台: WT32-SC01)"></a>3.2 硬件推理指标 (测试平台: WT32-SC01)</h3><ul>
-<li><strong>推理延迟</strong>：约 20-40ms（肉眼几乎无延迟）。</li>
-<li><strong>内存占用</strong>：激活值缓存（Double Buffer）仅占用约 31KB 内部 DRAM。</li>
-<li><strong>存储空间</strong>：Int8 权重文件远小于 100KB。</li>
+<h3 id="3-2-硬件运行效率"><a href="#3-2-硬件运行效率" class="headerlink" title="3.2 硬件运行效率"></a>3.2 硬件运行效率</h3><ul>
+<li><strong>推理延迟</strong>：单次识别耗时控制在 20ms-40ms，满足实时交互需求。</li>
+<li><strong>资源占用</strong>：Int8 量化后的模型参数仅占用数十 KB 存储空间。</li>
 </ul>
 <hr>
-<h2 id="4-硬件展示-Hardware-Gallery"><a href="#4-硬件展示-Hardware-Gallery" class="headerlink" title="4. 硬件展示 (Hardware Gallery)"></a>4. 硬件展示 (Hardware Gallery)</h2><p>项目运行在 <strong>WT32-SC01</strong> 上，这是一款搭载 ESP32-WROVER-B 模组、带 3.5 英寸电容触摸屏的开发板。</p>
-<p><img src="/images/esp_net/img.png" alt="UI展示"><br><em>图：基于 LovyanGFX 驱动的交互界面，左侧为 28x28 绘图区，右侧为实时分类概率。</em></p>
+<h2 id="4-系统展示-Showcase"><a href="#4-系统展示-Showcase" class="headerlink" title="4. 系统展示 (Showcase)"></a>4. 系统展示 (Showcase)</h2><p>系统运行于 <strong>WT32-SC01 (ESP32-WROVER-B)</strong> 开发平台。</p>
+<p><img src="/images/esp_net/img.png" alt="交互界面展示"><br><em>图：基于 LovyanGFX 的交互界面。左侧为触摸绘图区，右侧为各类别（0-9）的实时预测概率。</em></p>
+<h3 id="视频演示"><a href="#视频演示" class="headerlink" title="视频演示"></a>视频演示</h3><p>可以通过以下链接查看系统的实时运行效果：<br><a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV12XdBBdEAA/">Bilibili：ESP32 手写数字识别演示</a></p>
 <hr>
-<h2 id="5-快速上手-Getting-Started"><a href="#5-快速上手-Getting-Started" class="headerlink" title="5. 快速上手 (Getting Started)"></a>5. 快速上手 (Getting Started)</h2><h3 id="步骤-A：训练与导出"><a href="#步骤-A：训练与导出" class="headerlink" title="步骤 A：训练与导出"></a>步骤 A：训练与导出</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 下载数据集</span></span><br><span class="line">python download_mnist.py</span><br><span class="line"><span class="comment"># 2. 训练模型</span></span><br><span class="line">python train_mcu.py</span><br><span class="line"><span class="comment"># 3. 导出 C 语言权重头文件</span></span><br><span class="line">python export_weights.py</span><br></pre></td></tr></table></figure>
-
-<h3 id="步骤-B：固件烧录"><a href="#步骤-B：固件烧录" class="headerlink" title="步骤 B：固件烧录"></a>步骤 B：固件烧录</h3><ol>
-<li>使用 VS Code 打开 <code>LVGL8-WT32-SC01-Arduino</code> 文件夹（需安装 PlatformIO 插件）。</li>
-<li>将生成的 <code>model_weights.h</code> 拷贝至 <code>src/</code> 目录。</li>
-<li>连接开发板，点击 <strong>Upload</strong>。</li>
+<h2 id="5-快速上手-Quick-Start"><a href="#5-快速上手-Quick-Start" class="headerlink" title="5. 快速上手 (Quick Start)"></a>5. 快速上手 (Quick Start)</h2><ol>
+<li><strong>环境配置</strong>：克隆仓库并安装 PyTorch 及 PlatformIO 开发环境。</li>
+<li><strong>训练与导出</strong>：运行 <code>train_mcu.py</code> 获取权重，通过 <code>export_weights.py</code> 生成 C 语言头文件。</li>
+<li><strong>固件编译</strong>：在 <code>LVGL8-WT32-SC01-Arduino</code> 工程中导入权重并上传至 ESP32。</li>
 </ol>
 <hr>
-<h2 id="6-总结"><a href="#6-总结" class="headerlink" title="6. 总结"></a>6. 总结</h2><p><strong>ESP-Net</strong> 不仅仅是一个识别数字的 Demo，它是一套完整的从算法到硬件的落地方法论。它证明了在不依赖复杂框架的情况下，通过合理的量化与算子优化，即使是 ESP32 这种“低功耗”芯片也能拥有强大的端侧感知能力。</p>
+<h2 id="6-开源信息-Open-Source"><a href="#6-开源信息-Open-Source" class="headerlink" title="6. 开源信息 (Open Source)"></a>6. 开源信息 (Open Source)</h2><p>本项目已在 GitHub 开源，包含完整的训练脚本与嵌入式端 C++ 源代码。</p>
+<ul>
+<li><strong>GitHub 仓库</strong>：<a target="_blank" rel="noopener" href="https://github.com/Eaglewzw/esp32_mninst.git">https://github.com/Eaglewzw/esp32_mninst.git</a></li>
+<li><strong>演示视频</strong>：<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV12XdBBdEAA/">https://www.bilibili.com/video/BV12XdBBdEAA/</a></li>
+</ul>
 <hr>
 
       
@@ -400,7 +400,7 @@
 <th align="left">参数量 (M)</th>
 <th align="left">FLOPs (G)</th>
 <th align="left">磁盘占用 (MB)</th>
-<th align="left"><a href="mailto:&#x6d;&#65;&#x50;&#64;&#48;&#46;&#x35;">mAP@0.5</a> (VOC)</th>
+<th align="left"><a href="mailto:&#x6d;&#65;&#x50;&#x40;&#48;&#46;&#x35;">mAP@0.5</a> (VOC)</th>
 </tr>
 </thead>
 <tbody><tr>
