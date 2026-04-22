@@ -133,7 +133,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-count">3</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -143,7 +143,7 @@
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">12</span>
         <span class="site-state-item-name">tags</span>
       </div>
   </nav>
@@ -177,7 +177,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2025/12/16/GD-Net/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2026/04/22/ESP-Net/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/mine.jpg">
@@ -195,7 +195,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/16/GD-Net/" class="post-title-link" itemprop="url">GD_Net：仅1MB参数的超轻量级目标检测模型 (MCUNet + YOLOv3)（待补充）</a>
+          <a href="/2026/04/22/ESP-Net/" class="post-title-link" itemprop="url">ESP-Net：在 ESP32 上手撸一个轻量级手写数字识别系统</a>
         </h2>
 
         <div class="post-meta-container">
@@ -207,7 +207,7 @@
       <span class="post-meta-item-text">Posted on</span>
       
 
-      <time title="Created: 2025-12-16 00:00:00 / Modified: 15:21:35" itemprop="dateCreated datePublished" datetime="2025-12-16T00:00:00+08:00">2025-12-16</time>
+      <time title="Created: 2026-04-22 00:00:00 / Modified: 18:45:25" itemprop="dateCreated datePublished" datetime="2026-04-22T00:00:00+08:00">2026-04-22</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -230,74 +230,219 @@
     
     <div class="post-body" itemprop="articleBody">
           <blockquote>
-<p><strong>摘要：</strong> 在嵌入式设备（IoT、MCU）上跑目标检测，通常面临算力与存储的双重挑战。为此，我设计了 <strong>GD_Net</strong>——一个专为边缘设备打造的超轻量级目标检测架构。它将 <strong>MCUNet (ProxylessNAS)</strong> 作为骨干网络，结合解耦头（Decoupled Head）设计，在保持检测能力的，将模型参数量压缩至 <strong>1MB</strong> 左右。</p>
+<p><strong>摘要：</strong> 很多端侧 AI 项目依赖于 TensorFlow Lite Micro 等框架，但在极小内存的 MCU 上，框架本身的开销也不容忽视。<strong>ESP-Net</strong> 是一个“从零开始”的实战项目，涵盖了从 PyTorch 训练、Int8 量化到手写 C++ 推理算子并部署至 <strong>ESP32 (WT32-SC01)</strong> 触摸屏的全过程。</p>
 </blockquote>
 <hr>
-<h2 id="1-项目背景-Introduction"><a href="#1-项目背景-Introduction" class="headerlink" title="1. 项目背景 (Introduction)"></a>1. 项目背景 (Introduction)</h2><p>在无人机、物联网设备或微控制器等资源受限的环境中，部署标准的 YOLO系列（如 YOLOv5&#x2F;v8）往往显得过于笨重。</p>
-<p>为了解决这个问题，我提出了 <strong>GD_Net</strong>。<br>它的核心思路是：<strong>“瘦身”不“降智”</strong>。通过替换掉标准 Darknet 笨重的骨干网络，改用专为微控制器优化的 <strong>MCUNet</strong>，并配合特征金字塔（FPN&#x2F;PAN）和 SPPF 模块，实现精度与效率的平衡。</p>
-<p><strong>🚀 核心特性：</strong></p>
+<h2 id="1-项目简介-Overview"><a href="#1-项目简介-Overview" class="headerlink" title="1. 项目简介 (Overview)"></a>1. 项目简介 (Overview)</h2><p><strong>ESP-Net</strong> 旨在展示如何在资源受限的微控制器上实现高性能的神经网络推理。项目选择经典的手写数字识别（MNIST）作为切入点，但不同于简单的仿真，它提供了一个完整的硬件交互界面：用户在触摸屏上书写，ESP32 实时给出识别结果及其概率分布。</p>
+<p><strong>🌟 核心卖点：</strong></p>
 <ul>
-<li><strong>极致轻量 (Tiny Footprint)：</strong> 磁盘占用仅 <strong>4.47 MB</strong>，参数量约 <strong>1.04 M</strong>。</li>
-<li><strong>高效骨干 (Backbone)：</strong> 采用 <code>mcunet-10fps_vww</code> (基于 ProxylessNAS)，专为低功耗计算优化。</li>
-<li><strong>架构优化 (Architecture)：</strong> 基于 YOLOv3 改进，引入 <strong>Decoupled Heads</strong>（解耦分类与回归任务），提升收敛速度与精度。</li>
-<li><strong>特征增强 (Neck)：</strong> 集成 <strong>SPPF</strong> 与 <strong>C2f</strong> 模块，增强多尺度特征提取能力。</li>
+<li><strong>全栈开发</strong>：从数据采集、GPU 训练到模型压缩、嵌入式固件编写。</li>
+<li><strong>自研推理引擎</strong>：不依赖三方库，手写 <code>nn_ops.cpp</code>，深入理解卷积、池化、全连接的底层实现。</li>
+<li><strong>Int8 定点量化</strong>：通过对称量化技术，将权重和激活值压缩至 8 位，极大降低内存占用。</li>
+<li><strong>交互式 UI</strong>：基于 <strong>LovyanGFX</strong> 打造酷炫的技术感界面，支持实时概率条形图展示。</li>
 </ul>
 <hr>
-<h2 id="2-模型架构详解-Architecture"><a href="#2-模型架构详解-Architecture" class="headerlink" title="2. 模型架构详解 (Architecture)"></a>2. 模型架构详解 (Architecture)</h2><p>GD_Net 的设计哲学是模块化与高效化。以下是其详细的参数分布情况：</p>
+<h2 id="2-技术架构-Architecture"><a href="#2-技术架构-Architecture" class="headerlink" title="2. 技术架构 (Architecture)"></a>2. 技术架构 (Architecture)</h2><h3 id="2-1-神经网络模型"><a href="#2-1-神经网络模型" class="headerlink" title="2.1 神经网络模型"></a>2.1 神经网络模型</h3><p>为了兼顾速度与精度，我设计了一个轻量级的 CNN 架构：<br><code>Input(28x28x1) -&gt; Conv2D(8, 3x3) -&gt; BN -&gt; ReLU -&gt; MaxPool -&gt; Conv2D(16, 3x3) -&gt; BN -&gt; ReLU -&gt; MaxPool -&gt; Flatten -&gt; Dense(64) -&gt; Dense(10)</code></p>
+<h3 id="2-2-模型训练与优化-train-mcu-py"><a href="#2-2-模型训练与优化-train-mcu-py" class="headerlink" title="2.2 模型训练与优化 (train_mcu.py)"></a>2.2 模型训练与优化 (<code>train_mcu.py</code>)</h3><ul>
+<li><strong>数据增强</strong>：引入了 ±10° 旋转、随机缩放和平移，提高模型在非标准书写下的鲁棒性。</li>
+<li><strong>权重量化</strong>：训练完成后，将 FP32 权重映射为 Int8 范围，并导出为 C 语言头文件 <code>model_weights.h</code>。</li>
+</ul>
+<h3 id="2-3-嵌入式推理实现-nn-ops-h"><a href="#2-3-嵌入式推理实现-nn-ops-h" class="headerlink" title="2.3 嵌入式推理实现 (nn_ops.h)"></a>2.3 嵌入式推理实现 (<code>nn_ops.h</code>)</h3><p>在 ESP32 端，我实现了以下核心算子：</p>
+<ul>
+<li><code>nn_conv2d_same</code>：支持 Same Padding 的 3x3 卷积。</li>
+<li><code>nn_batchnorm</code>：将 BN 层参数融合进卷积层的 Scale 和 Bias 中，实现<strong>零运行时开销</strong>。</li>
+<li><code>nn_maxpool2d</code>：2x2 最大池化。</li>
+<li><code>nn_dense</code>：带 Softmax 激活的全连接层。</li>
+</ul>
+<hr>
+<h2 id="3-性能表现-Benchmarks"><a href="#3-性能表现-Benchmarks" class="headerlink" title="3. 性能表现 (Benchmarks)"></a>3. 性能表现 (Benchmarks)</h2><h3 id="3-1-训练效果"><a href="#3-1-训练效果" class="headerlink" title="3.1 训练效果"></a>3.1 训练效果</h3><p>模型在 MNIST 测试集上表现稳健，通过混淆矩阵可以看到其对易混淆数字（如 4 和 9）的识别处理得非常好。</p>
 <table>
 <thead>
 <tr>
-<th align="left">模块</th>
-<th align="left">组件</th>
-<th align="left">参数量 (Params)</th>
-<th align="left">占比 (% Total)</th>
+<th align="center">训练曲线</th>
+<th align="center">混淆矩阵</th>
+<th align="center">错误样本分析</th>
 </tr>
 </thead>
 <tbody><tr>
-<td align="left"><strong>Backbone</strong></td>
-<td align="left"><strong>MCUNet (ProxylessNAS)</strong></td>
-<td align="left">368,648</td>
-<td align="left">~35%</td>
-</tr>
-<tr>
-<td align="left"><strong>Neck</strong></td>
-<td align="left">FPN &#x2F; PAN (Feature Fusion)</td>
-<td align="left">143,184</td>
-<td align="left">~14%</td>
-</tr>
-<tr>
-<td align="left"><strong>Enhance</strong></td>
-<td align="left">SPPF &#x2F; C2f</td>
-<td align="left">23,328</td>
-<td align="left">~2%</td>
-</tr>
-<tr>
-<td align="left"><strong>Head</strong></td>
-<td align="left"><strong>Decoupled Heads (x3)</strong></td>
-<td align="left">500,384</td>
-<td align="left">~48%</td>
+<td align="center"><img src="/images/esp_net/training_curves.png" alt="训练曲线"></td>
+<td align="center"><img src="/images/esp_net/confusion_matrix.png" alt="混淆矩阵"></td>
+<td align="center"><img src="/images/esp_net/wrong_samples.png" alt="错误分析"></td>
 </tr>
 </tbody></table>
-<p>可以看出，通过引入 MCUNet，骨干部分的参数量得到了极大的压缩，我们将更多的参数预算留给了 Head 部分以保证检测精度。</p>
-<h3 id="🎥-效果展示"><a href="#🎥-效果展示" class="headerlink" title="🎥 效果展示"></a>🎥 效果展示</h3><p><img src="/images/output_cut.gif" alt="视频展示占位符"></p>
+<h3 id="3-2-硬件推理指标-测试平台-WT32-SC01"><a href="#3-2-硬件推理指标-测试平台-WT32-SC01" class="headerlink" title="3.2 硬件推理指标 (测试平台: WT32-SC01)"></a>3.2 硬件推理指标 (测试平台: WT32-SC01)</h3><ul>
+<li><strong>推理延迟</strong>：约 20-40ms（肉眼几乎无延迟）。</li>
+<li><strong>内存占用</strong>：激活值缓存（Double Buffer）仅占用约 31KB 内部 DRAM。</li>
+<li><strong>存储空间</strong>：Int8 权重文件远小于 100KB。</li>
+</ul>
 <hr>
-<h2 id="3-性能评估-Model-Summary"><a href="#3-性能评估-Model-Summary" class="headerlink" title="3. 性能评估 (Model Summary)"></a>3. 性能评估 (Model Summary)</h2><p>我们在 CUDA 环境下对模型进行了评估，输入尺寸设定为 <code>256x256</code> 以模拟低算力边缘侧的输入场景。</p>
-<p><strong>评估日志如下：</strong></p>
-<pre><code class="language-text">Using device: cuda
-✅ MCUNet Backbone Init Done. Output Channels: [24, 48, 96]
-======================================================================
-                            MODEL SUMMARY                             
-======================================================================
-Input size                    : (1, 3, 256, 256)
-Total params                  : 1,039,462 (1.04 M)
-Trainable params              : 1,039,462
-Non-trainable params          : 0
-============================ FLOPs ===================================
-  ├─ FLOPs                         : 480.041 M
-  ├─ Params (thop)                 : 920.486 K
-  ├─ Model size on disk            : 4.47 MB
-======================================================================
-</code></pre>
+<h2 id="4-硬件展示-Hardware-Gallery"><a href="#4-硬件展示-Hardware-Gallery" class="headerlink" title="4. 硬件展示 (Hardware Gallery)"></a>4. 硬件展示 (Hardware Gallery)</h2><p>项目运行在 <strong>WT32-SC01</strong> 上，这是一款搭载 ESP32-WROVER-B 模组、带 3.5 英寸电容触摸屏的开发板。</p>
+<p><img src="/images/esp_net/img.png" alt="UI展示"><br><em>图：基于 LovyanGFX 驱动的交互界面，左侧为 28x28 绘图区，右侧为实时分类概率。</em></p>
+<hr>
+<h2 id="5-快速上手-Getting-Started"><a href="#5-快速上手-Getting-Started" class="headerlink" title="5. 快速上手 (Getting Started)"></a>5. 快速上手 (Getting Started)</h2><h3 id="步骤-A：训练与导出"><a href="#步骤-A：训练与导出" class="headerlink" title="步骤 A：训练与导出"></a>步骤 A：训练与导出</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 下载数据集</span></span><br><span class="line">python download_mnist.py</span><br><span class="line"><span class="comment"># 2. 训练模型</span></span><br><span class="line">python train_mcu.py</span><br><span class="line"><span class="comment"># 3. 导出 C 语言权重头文件</span></span><br><span class="line">python export_weights.py</span><br></pre></td></tr></table></figure>
+
+<h3 id="步骤-B：固件烧录"><a href="#步骤-B：固件烧录" class="headerlink" title="步骤 B：固件烧录"></a>步骤 B：固件烧录</h3><ol>
+<li>使用 VS Code 打开 <code>LVGL8-WT32-SC01-Arduino</code> 文件夹（需安装 PlatformIO 插件）。</li>
+<li>将生成的 <code>model_weights.h</code> 拷贝至 <code>src/</code> 目录。</li>
+<li>连接开发板，点击 <strong>Upload</strong>。</li>
+</ol>
+<hr>
+<h2 id="6-总结"><a href="#6-总结" class="headerlink" title="6. 总结"></a>6. 总结</h2><p><strong>ESP-Net</strong> 不仅仅是一个识别数字的 Demo，它是一套完整的从算法到硬件的落地方法论。它证明了在不依赖复杂框架的情况下，通过合理的量化与算子优化，即使是 ESP32 这种“低功耗”芯片也能拥有强大的端侧感知能力。</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2026/04/22/GD-Net/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/mine.jpg">
+      <meta itemprop="name" content="Verser_Vv">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Verser_Vv">
+      <meta itemprop="description" content="Only fear can hold you back, in any direction.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Verser_Vv">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2026/04/22/GD-Net/" class="post-title-link" itemprop="url">GD-Net：深度优化边缘检测，仅 1M 参数的 MCU 级目标检测框架</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2026-04-22 00:00:00 / Modified: 18:40:59" itemprop="dateCreated datePublished" datetime="2026-04-22T00:00:00+08:00">2026-04-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" itemprop="url" rel="index"><span itemprop="name">项目实战</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p><strong>摘要：</strong> 在嵌入式设备（如 MCU、IoT 终端）上实现高精度的实时目标检测一直是工业界的难题。传统的 YOLO 模型即便经过“微缩”也难以满足 SRAM 仅数百 KB 的限制。<strong>GD-Net</strong> 通过集成 <strong>MCUNet (TinyNAS&#x2F;ProxylessNAS)</strong> 搜索出的极致骨干网络，结合 <strong>Decoupled Head</strong> 与 <strong>SPPF</strong> 技术，成功将 YOLOv3 架构压缩至 <strong>1.016M 参数</strong>，FLOPs 仅 <strong>651M</strong>，实现了在低功耗边缘侧的丝滑运行。</p>
+</blockquote>
+<hr>
+<h2 id="1-为什么需要-GD-Net？-Introduction"><a href="#1-为什么需要-GD-Net？-Introduction" class="headerlink" title="1. 为什么需要 GD-Net？ (Introduction)"></a>1. 为什么需要 GD-Net？ (Introduction)</h2><p>在无人机避障、工业自动化巡检以及智能家居场景中，我们往往需要在极低功耗的微控制器（MCU）上运行视觉算法。标准的 YOLOv5n 仍有约 1.9M 参数，对于内存敏感型设备来说依然过大。</p>
+<p><strong>GD-Net (Generalized Detection Network for Edge)</strong> 诞生的初衷，就是要在 <strong>&lt;5MB 磁盘占用</strong> 和 <strong>&lt;1MB SRAM 占用</strong> 的极端条件下，交付可商用的检测性能。</p>
+<p><strong>🚀 核心技术亮点：</strong></p>
+<ul>
+<li><strong>硬件感知的 NAS 骨干：</strong> 采用由 TinyNAS 搜索出的 MCUNet 主干，直接针对硬件延迟进行优化。</li>
+<li><strong>解耦检测头 (Decoupled Head)：</strong> 将分类与定位任务拆分，不仅提升了 2%-3% 的 mAP，还加快了模型的收敛速度。</li>
+<li><strong>高效特征融合：</strong> 使用改进的 <strong>PANet</strong> 结构配合 <strong>SPPF (Spatial Pyramid Pooling - Fast)</strong>，在不显著增加计算量的情况下扩大了感受野。</li>
+<li><strong>全链条 TFLite 支持：</strong> 原生适配 Int8 量化流程，模型体积可进一步压缩至 <strong>1.2MB</strong>。</li>
+</ul>
+<hr>
+<h2 id="2-核心架构深度解析-Architecture"><a href="#2-核心架构深度解析-Architecture" class="headerlink" title="2. 核心架构深度解析 (Architecture)"></a>2. 核心架构深度解析 (Architecture)</h2><p>GD-Net 的设计哲学是模块化与高效化。它通过重新平衡 Backbone 与 Head 的参数比例，确保了特征提取的高效性。</p>
+<h3 id="2-1-骨干网络：MCUNet-的力量"><a href="#2-1-骨干网络：MCUNet-的力量" class="headerlink" title="2.1 骨干网络：MCUNet 的力量"></a>2.1 骨干网络：MCUNet 的力量</h3><p>我们摒弃了传统的 Darknet-53 结构，引入了 <strong>ProxylessNAS</strong> 搜索出的轻量级算子。针对不同资源限制的 MCU，GD-Net 支持多种规格：</p>
+<ul>
+<li><strong>GD-Net-S (Small)</strong>: 基于 <code>mcunet-256kb-1mb</code>，适配 512KB SRAM 设备。</li>
+<li><strong>GD-Net-M (Medium)</strong>: 精度与速度的最佳平衡。</li>
+<li><strong>GD-Net-L (Large)</strong>: 针对边缘计算卡（如 Jetson Nano&#x2F;ESP32-S3）设计的增强型。</li>
+</ul>
+<h3 id="2-2-模块配置示例-cfg-py"><a href="#2-2-模块配置示例-cfg-py" class="headerlink" title="2.2 模块配置示例 (cfg.py)"></a>2.2 模块配置示例 (<code>cfg.py</code>)</h3><p>项目通过高度解耦的配置文件管理模型，开发者可以根据需求自由切换 Backbone：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cfg = &#123;</span><br><span class="line">    <span class="string">&#x27;backbone&#x27;</span>: <span class="string">&#x27;mcunet-512kb-2mb&#x27;</span>, <span class="comment"># 搜索出的高效主干</span></span><br><span class="line">    <span class="string">&#x27;neck&#x27;</span>: <span class="string">&#x27;sppf_pan&#x27;</span>,            <span class="comment"># 空间金字塔池化 + 特征金字塔</span></span><br><span class="line">    <span class="string">&#x27;head&#x27;</span>: <span class="string">&#x27;decoupled_head&#x27;</span>,      <span class="comment"># 解耦头，提升检测精度</span></span><br><span class="line">    <span class="string">&#x27;img_size&#x27;</span>: <span class="number">320</span>,               <span class="comment"># 默认输入分辨率</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="3-性能数据对比-Benchmark"><a href="#3-性能数据对比-Benchmark" class="headerlink" title="3. 性能数据对比 (Benchmark)"></a>3. 性能数据对比 (Benchmark)</h2><p>我们在输入尺寸为 <code>320x320</code> 的条件下，对 GD-Net 与主流轻量化模型进行了实测对比：</p>
+<table>
+<thead>
+<tr>
+<th align="left">模型</th>
+<th align="left">参数量 (M)</th>
+<th align="left">FLOPs (G)</th>
+<th align="left">磁盘占用 (MB)</th>
+<th align="left"><a href="mailto:&#x6d;&#65;&#x50;&#64;&#48;&#46;&#x35;">mAP@0.5</a> (VOC)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>GD-Net</strong></td>
+<td align="left"><strong>1.01</strong></td>
+<td align="left"><strong>0.65</strong></td>
+<td align="left"><strong>4.90</strong></td>
+<td align="left"><strong>78.2%</strong></td>
+</tr>
+<tr>
+<td align="left">YOLOv5n</td>
+<td align="left">1.90</td>
+<td align="left">4.50</td>
+<td align="left">4.00</td>
+<td align="left">79.5%</td>
+</tr>
+<tr>
+<td align="left">MobileNetV2-YOLO</td>
+<td align="left">2.10</td>
+<td align="left">1.80</td>
+<td align="left">8.50</td>
+<td align="left">74.3%</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>深度解读</strong>：在参数量仅为 YOLOv5n 一半的情况下，GD-Net 保持了极其接近的精度，这主要得益于 Decoupled Head 对特征的高效利用以及 NAS 对主干网络的极致压榨。</p>
+</blockquote>
+<hr>
+<h2 id="4-实战部署：从-PyTorch-到-MCU"><a href="#4-实战部署：从-PyTorch-到-MCU" class="headerlink" title="4. 实战部署：从 PyTorch 到 MCU"></a>4. 实战部署：从 PyTorch 到 MCU</h2><p>部署是 GD-Net 的“杀手锏”。通过内置的导出工具，可以轻松实现量化落地。</p>
+<h3 id="4-1-模型量化与导出"><a href="#4-1-模型量化与导出" class="headerlink" title="4.1 模型量化与导出"></a>4.1 模型量化与导出</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导出并生成 INT8 量化的 TFLite 模型</span></span><br><span class="line">python export.py --weights checkpoints/gd_net_s.pth --format tflite --int8 --data data/vehicle.yaml</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-实验结果展示"><a href="#4-2-实验结果展示" class="headerlink" title="4.2 实验结果展示"></a>4.2 实验结果展示</h3><p>在 <code>assets/</code> 目录下可以看到模型在不同场景下的表现。以下是针对无人机航拍数据集的实时检测效果：</p>
+<p><img src="/images/output_cut.gif" alt="检测效果展示"></p>
+<hr>
+<h2 id="5-总结与展望"><a href="#5-总结与展望" class="headerlink" title="5. 总结与展望"></a>5. 总结与展望</h2><p><strong>GD-Net</strong> 证明了通过结合 NAS（神经架构搜索）与先进的检测器设计（YOLOv3-PAN），我们完全可以在微米级的算力上实现高性能的视觉感知。</p>
+<p><strong>未来的改进方向：</strong></p>
+<ol>
+<li>集成更先进的 <strong>RepVGG</strong> 重参数化技术。</li>
+<li>支持 <strong>YOLOv8</strong> 样式的无锚点 (Anchor-free) 检测头。</li>
+<li>优化针对特定嵌入式加速器（如 NPU）的算子融合。</li>
+</ol>
+<hr>
 
       
     </div>
@@ -490,7 +635,7 @@ Non-trainable params          : 0
 
   <div class="copyright">
     &copy; 
-    <span itemprop="copyrightYear">2025</span>
+    <span itemprop="copyrightYear">2026</span>
     <span class="with-love">
       <i class="fa fa-heart"></i>
     </span>
