@@ -1,35 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+<meta name="theme-color" content="#C96442" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#D97757" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="mask-icon" href="/images/logo.svg" color="#C96442">
 
 <link rel="stylesheet" href="/css/main.css">
 
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+<link rel="stylesheet" href="/lib/@fortawesome/fontawesome-free/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/lib/animate.css/animate.min.css" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"eaglewzw.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"eaglewzw.github.io","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.26.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="摘要： 在资源极度受限的嵌入式设备（如 MCU、IoT 终端）上实现高精度、实时的目标检测，始终是边缘智能领域的重大挑战。传统的轻量化 YOLO 模型往往因参数量和内存需求，难以适配 SRAM 仅为数百 KB 的硬件环境。本文提出 GD-Net (Generalized Detection Network)，通过集成硬件感知神经架构搜索（MCUNet&#x2F;TinyNAS）获得的极致骨干网络">
+    <meta name="description" content="面向 MCU 级边缘设备的目标检测框架。以 MCUNet&#x2F;TinyNAS 搜索出的硬件感知骨干为基础，结合解耦检测头与 SPPF，在仅 1.016M 参数、651M FLOPs 的开销下于 Pascal VOC 取得 78.2% mAP@0.5，参数量约为 YOLOv5n 的一半，并原生支持 Int8 TFLite 部署。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="GD-Net：面向 MCU 级边缘侧设备的资源高效型目标检测框架">
 <meta property="og:url" content="https://eaglewzw.github.io/2026/04/22/GD-Net/index.html">
 <meta property="og:site_name" content="Verser_Vv">
-<meta property="og:description" content="摘要： 在资源极度受限的嵌入式设备（如 MCU、IoT 终端）上实现高精度、实时的目标检测，始终是边缘智能领域的重大挑战。传统的轻量化 YOLO 模型往往因参数量和内存需求，难以适配 SRAM 仅为数百 KB 的硬件环境。本文提出 GD-Net (Generalized Detection Network)，通过集成硬件感知神经架构搜索（MCUNet&#x2F;TinyNAS）获得的极致骨干网络">
-<meta property="og:locale" content="en_US">
+<meta property="og:description" content="面向 MCU 级边缘设备的目标检测框架。以 MCUNet&#x2F;TinyNAS 搜索出的硬件感知骨干为基础，结合解耦检测头与 SPPF，在仅 1.016M 参数、651M FLOPs 的开销下于 Pascal VOC 取得 78.2% mAP@0.5，参数量约为 YOLOv5n 的一半，并原生支持 Int8 TFLite 部署。">
+<meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://eaglewzw.github.io/images/output_cut.gif">
 <meta property="article:published_time" content="2026-04-22T09:00:00.000Z">
-<meta property="article:modified_time" content="2026-04-22T12:46:47.937Z">
+<meta property="article:modified_time" content="2026-09-26T04:03:14.897Z">
 <meta property="article:author" content="Verser_Vv">
 <meta property="article:tag" content="Deep Learning">
 <meta property="article:tag" content="Edge AI">
@@ -44,7 +44,7 @@
 <link rel="canonical" href="https://eaglewzw.github.io/2026/04/22/GD-Net/">
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"https://eaglewzw.github.io/2026/04/22/GD-Net/","path":"2026/04/22/GD-Net/","title":"GD-Net：面向 MCU 级边缘侧设备的资源高效型目标检测框架"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://eaglewzw.github.io/2026/04/22/GD-Net/","path":"2026/04/22/GD-Net/","title":"GD-Net：面向 MCU 级边缘侧设备的资源高效型目标检测框架"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
 <title>GD-Net：面向 MCU 级边缘侧设备的资源高效型目标检测框架 | Verser_Vv</title>
@@ -58,7 +58,7 @@
 
 
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="/lib/animejs/lib/anime.min.js" crossorigin="anonymous" defer></script>
 <script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
 
   
@@ -86,7 +86,10 @@
     <div class="column">
       <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
   <div class="site-nav-toggle">
-    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
     </div>
   </div>
 
@@ -100,13 +103,17 @@
   </div>
 
   <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="Search" role="button">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
     </div>
   </div>
 </div>
 
 
 
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
 
 
 
@@ -119,10 +126,10 @@
     <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
       <ul class="sidebar-nav">
         <li class="sidebar-nav-toc">
-          Table of Contents
+          文章目录
         </li>
         <li class="sidebar-nav-overview">
-          Overview
+          站点概览
         </li>
       </ul>
 
@@ -145,17 +152,17 @@
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
           <span class="site-state-item-count">3</span>
-          <span class="site-state-item-name">posts</span>
+          <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
         <span class="site-state-item-count">2</span>
-        <span class="site-state-item-name">categories</span></a>
+        <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
         <span class="site-state-item-count">12</span>
-        <span class="site-state-item-name">tags</span>
+        <span class="site-state-item-name">标签</span>
       </div>
   </nav>
 </div>
@@ -164,7 +171,7 @@
         <a href="https://github.com/Eaglewzw" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eaglewzw" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
       </span>
       <span class="links-of-author-item">
-        <a href="mailto:1460853569@qq.com" title="E-Mail → mailto:1460853569@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+        <a href="mailto:verser_wzw@163.com" title="E-Mail → mailto:verser_wzw@163.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
       </span>
   </div>
 
@@ -188,7 +195,7 @@
   
   
 
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://eaglewzw.github.io/2026/04/22/GD-Net/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -203,7 +210,7 @@
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
       <meta itemprop="name" content="GD-Net：面向 MCU 级边缘侧设备的资源高效型目标检测框架 | Verser_Vv">
-      <meta itemprop="description" content="">
+      <meta itemprop="description" content="面向 MCU 级边缘设备的目标检测框架。以 MCUNet&#x2F;TinyNAS 搜索出的硬件感知骨干为基础，结合解耦检测头与 SPPF，在仅 1.016M 参数、651M FLOPs 的开销下于 Pascal VOC 取得 78.2% mAP@0.5，参数量约为 YOLOv5n 的一半，并原生支持 Int8 TFLite 部署。">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
@@ -216,16 +223,22 @@
       <span class="post-meta-item-icon">
         <i class="far fa-calendar"></i>
       </span>
-      <span class="post-meta-item-text">Posted on</span>
-      
+      <span class="post-meta-item-text">发表于</span>
 
-      <time title="Created: 2026-04-22 00:00:00 / Modified: 03:46:47" itemprop="dateCreated datePublished" datetime="2026-04-22T00:00:00-09:00">2026-04-22</time>
+      <time title="创建时间：2026-04-22 00:00:00" itemprop="dateCreated datePublished" datetime="2026-04-22T00:00:00-09:00">2026-04-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-09-25 19:03:14" itemprop="dateModified" datetime="2026-09-25T19:03:14-09:00">2026-09-25</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
         <i class="far fa-folder"></i>
       </span>
-      <span class="post-meta-item-text">In</span>
+      <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" itemprop="url" rel="index"><span itemprop="name">项目实战</span></a>
         </span>
@@ -234,17 +247,14 @@
   
 </div>
 
+            <div class="post-description">面向 MCU 级边缘设备的目标检测框架。以 MCUNet/TinyNAS 搜索出的硬件感知骨干为基础，结合解耦检测头与 SPPF，在仅 1.016M 参数、651M FLOPs 的开销下于 Pascal VOC 取得 78.2% mAP@0.5，参数量约为 YOLOv5n 的一半，并原生支持 Int8 TFLite 部署。</div>
         </div>
       </header>
 
     
     
     
-    <div class="post-body" itemprop="articleBody"><blockquote>
-<p><strong>摘要：</strong> 在资源极度受限的嵌入式设备（如 MCU、IoT 终端）上实现高精度、实时的目标检测，始终是边缘智能领域的重大挑战。传统的轻量化 YOLO 模型往往因参数量和内存需求，难以适配 SRAM 仅为数百 KB 的硬件环境。本文提出 <strong>GD-Net (Generalized Detection Network)</strong>，通过集成硬件感知神经架构搜索（<strong>MCUNet&#x2F;TinyNAS</strong>）获得的极致骨干网络，并结合<strong>解耦检测头 (Decoupled Head)</strong> 与 <strong>SPPF</strong> 技术，在仅 <strong>1.016M 参数</strong>和 <strong>651M FLOPs</strong> 的计算开销下，实现了在低功耗边缘侧的卓越检测性能。</p>
-</blockquote>
-<hr>
-<h2 id="1-引言与动机-Introduction-Motivation"><a href="#1-引言与动机-Introduction-Motivation" class="headerlink" title="1. 引言与动机 (Introduction &amp; Motivation)"></a>1. 引言与动机 (Introduction &amp; Motivation)</h2><p>随着无人机自主导航、工业自动化巡检及智能家居生态的快速发展，在超低功耗微控制器（MCU）上部署复杂视觉算法的需求日益增长。然而，即便是目前最紧凑的标准模型（如 YOLOv5n，约 1.9M 参数），对于内存敏感型设备而言其静态存储与运行内存占用依然过高。</p>
+    <div class="post-body" itemprop="articleBody"><h2 id="1-引言与动机-Introduction-Motivation"><a href="#1-引言与动机-Introduction-Motivation" class="headerlink" title="1. 引言与动机 (Introduction &amp; Motivation)"></a>1. 引言与动机 (Introduction &amp; Motivation)</h2><p>随着无人机自主导航、工业自动化巡检及智能家居生态的快速发展，在超低功耗微控制器（MCU）上部署复杂视觉算法的需求日益增长。然而，即便是目前最紧凑的标准模型（如 YOLOv5n，约 1.9M 参数），对于内存敏感型设备而言其静态存储与运行内存占用依然过高。</p>
 <p><strong>GD-Net</strong> 的设计目标在于打破算法复杂度与硬件限制之间的壁垒，专注于在 <strong>&lt;5MB 磁盘占用</strong>与 <strong>&lt;1MB SRAM 占用</strong>的极端约束下，提供具备商业应用价值的检测能力。</p>
 <p><strong>核心技术贡献：</strong></p>
 <ul>
@@ -273,7 +283,7 @@
 <th align="left">参数量 (M)</th>
 <th align="left">FLOPs (G)</th>
 <th align="left">存储占用 (MB)</th>
-<th align="left"><a href="mailto:&#x6d;&#x41;&#80;&#x40;&#48;&#x2e;&#53;">mAP@0.5</a> (VOC)</th>
+<th align="left"><a href="mailto:&#109;&#65;&#x50;&#64;&#x30;&#x2e;&#x35;">mAP@0.5</a> (VOC)</th>
 </tr>
 </thead>
 <tbody><tr>
@@ -369,8 +379,19 @@
     </span>
     <span class="author" itemprop="copyrightHolder">Verser_Vv</span>
   </div>
-  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
+<div class="secret-corner">
+  <a class="secret-corner-link"
+     href="/life/"
+     title="这里还有一个角落"
+     aria-label="生活角落">
+    <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" focusable="false">
+      <path d="M12 1.6 13.9 10.1 22.4 12 13.9 13.9 12 22.4 10.1 13.9 1.6 12 10.1 10.1 Z"/>
+    </svg>
+  </a>
+</div>
+
 
     </div>
   </footer>
@@ -382,7 +403,7 @@
     <span class="toggle-line"></span>
   </div>
   <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="Back to top">
+  <div class="back-to-top" role="button" aria-label="返回顶部">
     <i class="fa fa-arrow-up fa-lg"></i>
     <span>0%</span>
   </div>
