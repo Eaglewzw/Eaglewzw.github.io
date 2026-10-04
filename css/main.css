@@ -1385,7 +1385,7 @@ pre code {
     vertical-align: middle;
   }
   .links-of-author a::before {
-    background: #d1b914;
+    background: #9ed4c1;
     display: inline-block;
     margin-right: 3px;
     transform: translateY(-2px);
@@ -3085,6 +3085,10 @@ a {
 a:hover {
   border-bottom-color: currentColor;
 }
+a:focus-visible {
+  outline: 2px solid var(--theme-color);
+  outline-offset: 4px;
+}
 .site-title,
 .post-title-link,
 .project-card-link,
@@ -3337,7 +3341,7 @@ hr {
 .portfolio-intro {
   max-width: 68em;
   margin: 0 0 10px;
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 1.78;
   color: var(--blockquote-color);
 }
@@ -3402,7 +3406,9 @@ hr {
 }
 .project-card-image {
   display: block;
+  box-sizing: border-box;
   height: 112px;
+  flex-shrink: 0;
   overflow: hidden;
   background: var(--body-bg-color);
 }
@@ -3438,7 +3444,7 @@ hr {
 }
 .project-card-meta {
   margin-bottom: 6px;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.6;
   letter-spacing: 0.2px;
   color: var(--theme-color);
@@ -3446,16 +3452,16 @@ hr {
 .project-card-summary {
   flex: 1;
   margin: 0;
-  font-size: 12.5px;
-  line-height: 1.72;
+  font-size: 13.5px;
+  line-height: 1.8;
   color: var(--blockquote-color);
-  max-height: 6.88em;
-  overflow: hidden;
 }
 .project-card-more {
+  align-self: flex-start;
   margin-top: 10px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--link-color);
+  border-bottom: none;
 }
 .portfolio-posts {
   border-top: 1px solid var(--pv-border);
@@ -3499,7 +3505,7 @@ hr {
 }
 .portfolio-post-summary {
   margin: 7px 0 0;
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.8;
   color: var(--blockquote-color);
 }
