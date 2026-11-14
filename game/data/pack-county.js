@@ -10,7 +10,7 @@
 //  理好，直接替换对应文字即可。演示人物一律标注「演示」。
 //
 //  注册方式（照 container 结构）：
-//    Object.assign(window.LIFE_DATA.scenes, { county: ... });
+//    Object.assign(window.LIFE_DATA.scenes, { ... });
 //    Object.assign(window.LIFE_DATA.characters, { ... });
 //    Object.assign(window.LIFE_DATA.dialogues, { ... });
 //    window.LIFE_DATA.memories.push({ ... });
@@ -61,103 +61,342 @@ window.LIFE_DATA = window.LIFE_DATA || {};
 // 周围对应范围被建筑覆盖，不要在占地里放互动点或出生点。
 Object.assign(window.LIFE_DATA.scenes, {
   county: {
-    id: 'county',
-    name: '县城 · 十字街口',
-    indoor: false,
-
-    map: [
-      'T..T..T..T..T.BT..T..T..T.aaa-aaaT..T..T..T..T..TB.T..T.',
-      '.......................aaaaaa-aaaa.T..,.....T.,...T.....',
-      '..wwwwwwwwwwwwwwwwwwwwwaaaaaa-aaaa..T....T.....T....T...',
-      '..wyyyyyyyyyyyyyyyyyyywaaaaaa-aaaq......................',
-      '..wyYyyyyyyyyyyyyyyYyywaaaaaa-aaaa........,........,....',
-      '..wyyyyyyyyyyyyyyyyyyywaaaaaa-aaaq.....m.....m..........',
-      '..wyyyyyyyyyMyyyyyyyyywaaaaaa-aaaa......................',
-      '..wyyyyyyyyyyyyyyFyyyypaaaaaa-aaaq...T.....T.....T......',
-      '..wyyyyyyyyyyyyyyyyyyypaaaaaa-aaaa......................',
-      '..wyyyyyyyyyyyyyyyyyyywaataaa-aaaq......................',
-      '..wyyYyyyyyyyyyyyyyyYywaaaaaa-aaaa......................',
-      '..wyyyyyyyyyyyyyyyyyyywaaaaaa-aaaq...................B..',
-      '..wwwwwwwwwwppgwwwwwwwwaaaaaa-aaaa..,..B................',
-      '..B..........pp.,......aaaaaa-aaaq......................',
-      '....T........pp........aaaaaa-aaaaaaaa..................',
-      '.T.........T.pp.....,..aaaaaa-aaaaaaaa..T...T.......T...',
-      '...,....m....pp........aia=======aiaSa..................',
-      '..........,..ppaaaaaaaaaaa=======aaaaaaaaaaaaaaaaaaaaaaa',
-      '.....,.......ppaaqaqaqaaaaaaa-aaaaaaaaaqaqacaqavaqacaqaa',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa',
-      '-----------------------===aaaaaaa===--------------------',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa',
-      '.aaaqacaqavaqacaqaqavaq...aaa-aaaaaaaqaqavaqataaqacaqava',
-      '.aaaaaaaaaaaaaaaaaaaaaaaaa=======aaaaaaaaaaaaaaaaaaaaaaa',
-      '...YyyyyyyyyyY.........aia=======aia....................',
-      '.,.yyyyyyyyyyy.T........aaaaa-aaaa..B...................',
-      '...yyyyyyyyyyy.......T..aaaaa-aaaa....T.......T.....T...',
-      '..,yyyyyyyyyyy,....m....aqaaa-aaaq.......m..............',
-      '...yyyyyyyyyyy..........aaaaa-aaaa...,...............,..',
-      '...Yyyyyyyyyyy..T......Taaaaa-aaaa.........,...........B',
-      '...........B.........,..acaaa-aaav......................',
-      '.T......T...............aaaaa-aaaa....T.....T.....T.....',
-      '........................aaaaa-aaaa.............,........',
-      '..T...T...T...T.........aqaaa-aaaq......................',
-      '........................aaaaa-aaaa......................',
-      'T.T..T..T..T..T.BT..T..T..aaa-aaaT..T..T..T..TB.T..T..T.'
+    "id": "county",
+    "name": "县城 · 十字街口",
+    "indoor": false,
+    "map": [
+      "T..T..T..T..T.BT..T..T..T.aaa-aaaT..T..T..T..T..TB.T..T.",
+      ".......................aaaaaa-aaaa.T..,.....T.,...T.....",
+      "..wwwwwwwwwwwwwwwwwwwwwaaaaaa-aaaa..T....T.....T....T...",
+      "..wyyyyyyyyyyyyyyyyyyywaaaaaa-aaaq......................",
+      "..wyYyyyyyyyyyyyyyyYyywaaaaaa-aaaa........,........,....",
+      "..wyyyyyyyyyyyyyyyyyyywaaaaaa-aaaq.....m.....m..........",
+      "..wyyyyyyyyyMyyyyyyyyywaaaaaa-aaaa......................",
+      "..wyyyyyyyyyyyyyyFyyyypaaaaaa-aaaq...T.....T.....T......",
+      "..wyyyyyyyyyyyyyyyyyyypaaaaaa-aaaa......................",
+      "..wyyyyyyyyyyyyyyyyyyywaataaa-aaaq......................",
+      "..wyyYyyyyyyyyyyyyyyYywaaaaaa-aaaa......................",
+      "..wyyyyyyyyyyyyyyyyyyywaaaaaa-aaaq...................B..",
+      "..wwwwwwwwwwppgwwwwwwwwaaaaaa-aaaa..,..B................",
+      "..B..........pp.,......aaaaaa-aaaq......................",
+      "....T........pp........aaaaaa-aaaaaaaa..................",
+      ".T.........T.pp.....,..aaaaaa-aaaaaaaa..T...T.......T...",
+      "...,....m....pp........aia=======aiaSa..................",
+      "..........,..ppaaaaaaaaaaa=======aaaaaaaaaaaaaaaaaaaaaaa",
+      ".....,.......ppaaqaqaqaaaaaaa-aaaaaaaaaqaqacaqavaqacaqaa",
+      "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa",
+      "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa",
+      "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa",
+      "-----------------------===aaaaaaa===--------------------",
+      "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa",
+      "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa",
+      "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaaa===aaaaaaaaaaaaaaaaaaaa",
+      ".aaaqacaqavaqacaqaqavaq...aaa-aaaaaaaqaqavaqataaqacaqava",
+      ".aaaaaaaaaaaaaaaaaaaaaaaaa=======aaaaaaaaaaaaaaaaaaaaaaa",
+      "...YyyyyyyyyyY.........aia=======aia....................",
+      ".,.yyyyyyyyyyy.T........aaaaa-aaaa..B...................",
+      "...yyyyyyyyyyy.......T..aaaaa-aaaa....T.......T.....T...",
+      "..,yyyyyyyyyyy,....m....aqaaa-aaaq.......m..............",
+      "...yyyyyyyyyyy..........aaaaa-aaaa...,...............,..",
+      "...Yyyyyyyyyyy..T......Taaaaa-aaaa.........,...........B",
+      "...........B.........,..acaaa-aaav......................",
+      ".T......T...............aaaaa-aaaa....T.....T.....T.....",
+      "........................aaaaa-aaaa.............,........",
+      "..T...T...T...T.........aqaaa-aaaq......................",
+      "........................aaaaa-aaaa......................",
+      "T.T..T..T..T..T.BT..T..T..aaa-aaaT..T..T..T..TB.T..T..T."
     ],
-
-    legend: {
-      'a': { tile: 'asphalt' },
-      '-': { tile: 'roadline' },
-      '=': { tile: 'crosswalk' },
-      'w': { tile: 'brickwall', solid: true },
-      'y': { tile: 'yard' },
-      'Y': { tile: 'yard',   entity: 'tree',       solid: true },
-      'q': { tile: 'asphalt', entity: 'shop',      solid: true },
-      'c': { tile: 'asphalt', entity: 'store',     solid: true },
-      'v': { tile: 'asphalt', entity: 'conv',      solid: true },
-      'm': { tile: 'grass',   entity: 'resident',  solid: true },
-      'g': { tile: 'path',    entity: 'schoolgate', solid: true },
-      'M': { tile: 'yard',    entity: 'school',    solid: true },
-      'F': { tile: 'yard',    entity: 'office',    solid: true },
-      't': { tile: 'asphalt', entity: 'busstop',   solid: true },
-      'i': { tile: 'asphalt', entity: 'tlight',    solid: true }
+    "legend": {
+      "a": {
+        "tile": "asphalt"
+      },
+      "-": {
+        "tile": "roadline"
+      },
+      "=": {
+        "tile": "crosswalk"
+      },
+      "w": {
+        "tile": "brickwall",
+        "solid": true
+      },
+      "y": {
+        "tile": "yard"
+      },
+      "Y": {
+        "tile": "yard",
+        "entity": "tree",
+        "solid": true
+      },
+      "q": {
+        "tile": "asphalt",
+        "entity": "shop",
+        "solid": true
+      },
+      "c": {
+        "tile": "asphalt",
+        "entity": "store",
+        "solid": true
+      },
+      "v": {
+        "tile": "asphalt",
+        "entity": "conv",
+        "solid": true
+      },
+      "m": {
+        "tile": "grass",
+        "entity": "resident",
+        "solid": true
+      },
+      "g": {
+        "tile": "path",
+        "entity": "schoolgate",
+        "solid": true
+      },
+      "M": {
+        "tile": "yard",
+        "entity": "school",
+        "solid": true
+      },
+      "F": {
+        "tile": "yard",
+        "entity": "office",
+        "solid": true
+      },
+      "t": {
+        "tile": "asphalt",
+        "entity": "busstop",
+        "solid": true
+      },
+      "i": {
+        "tile": "asphalt",
+        "entity": "tlight",
+        "solid": true
+      }
     },
-
-    // 出生点：长途汽车站牌旁（初到县城）
-    spawnPoints: {
-      'default': [25, 10]
+    "spawnPoints": {
+      "default": [
+        25,
+        10
+      ],
+      "from-village": [
+        29,
+        2
+      ],
+      "from-shenzhen": [
+        53,
+        20
+      ]
     },
-
-    characters: [
-      { id: 'county-teacher-male-demo',   at: [16, 9] },   // 操场·办公楼前
-      { id: 'county-teacher-female-demo', at: [9, 8] },    // 操场·教学楼西侧
-      { id: 'county-student-demo',        at: [14, 16] },  // 校门前土路上
-      { id: 'county-storeboss-demo',      at: [7, 27] }    // 小卖部后巷
+    "characters": [
+      {
+        "id": "county-teacher-male-demo",
+        "at": [
+          16,
+          9
+        ]
+      },
+      {
+        "id": "county-teacher-female-demo",
+        "at": [
+          9,
+          8
+        ]
+      },
+      {
+        "id": "county-student-demo",
+        "at": [
+          14,
+          16
+        ]
+      },
+      {
+        "id": "county-storeboss-demo",
+        "at": [
+          7,
+          27
+        ]
+      }
     ],
-
-    interactables: [
-      // —— 初到县城（第二章舞台）——
-      { id: 'bus-arrival',        type: 'memory',    at: [25, 9],   hint: '长途汽车站牌',     dialogueId: 'dlg-arrival',      memoryId: 'mem-county-arrival', isDemo: true },
-      { id: 'tlight-corner',      type: 'dialogue',  at: [24, 16],  hint: '十字路口的红绿灯', dialogueId: 'dlg-tlight' },
-      { id: 'newsstand-rack',     type: 'link',      at: [36, 16],  hint: '报刊亭的杂志架',   dialogueId: 'dlg-newsstand',
-        url: 'https://eaglewzw.github.io/2025/12/15/Drone-10k/', linkLabel: '打开博客文章《Drone-10k》' },
-      { id: 'stationery-window',  type: 'dialogue',  at: [33, 7],   hint: '文具店的橱窗',     dialogueId: 'dlg-stationery' },
-      { id: 'noodle-aroma',       type: 'dialogue',  at: [12, 26],  hint: '面馆的香气',       dialogueId: 'dlg-noodle' },
-      { id: 'store-fridge',       type: 'dialogue',  at: [6, 26],   hint: '小卖部的冰柜',     dialogueId: 'dlg-fridge' },
-      { id: 'market-square',      type: 'dialogue',  at: [8, 30],   hint: '集市的吆喝声',     dialogueId: 'dlg-market' },
-      // —— 学校区块（第三章 / 第四章）——
-      { id: 'gate-bell',          type: 'dialogue',  at: [14, 12],  hint: '学校大门',         dialogueId: 'dlg-gatebell' },
-      { id: 'classroom-front',    type: 'dialogue',  at: [12, 6],   hint: '教学楼的教室',     dialogueId: 'dlg-classroom' },
-      { id: 'office-door',        type: 'dialogue',  at: [17, 7],   hint: '老师们的办公室',   dialogueId: 'dlg-office', isDemo: true },
-      { id: 'recess-yard',        type: 'dialogue',  at: [8, 9],    hint: '课间的操场',       dialogueId: 'dlg-recess' },
-      { id: 'nightstudy-window',  type: 'memory',    at: [13, 6],   hint: '晚自习亮着的窗',   dialogueId: 'dlg-nightstudy', memoryId: 'mem-junior-years', isDemo: true },
-      // —— 高中生活（第六章）——
-      { id: 'senior-wing',        type: 'memory',    at: [10, 9],   hint: '高中部的晚自习',   dialogueId: 'dlg-senior-wing', memoryId: 'mem-high-school-years', isDemo: true },
-      // —— 出口：回人生地图 ——
-      { id: 'bus-map-exit',       type: 'chapterMap', at: [45, 26], hint: '回人生地图看看' }
+    "interactables": [
+      {
+        "id": "bus-arrival",
+        "type": "memory",
+        "at": [
+          25,
+          9
+        ],
+        "hint": "长途汽车站牌",
+        "dialogueId": "dlg-arrival",
+        "memoryId": "mem-county-arrival",
+        "isDemo": true
+      },
+      {
+        "id": "tlight-corner",
+        "type": "dialogue",
+        "at": [
+          24,
+          16
+        ],
+        "hint": "十字路口的红绿灯",
+        "dialogueId": "dlg-tlight"
+      },
+      {
+        "id": "newsstand-rack",
+        "type": "link",
+        "at": [
+          36,
+          16
+        ],
+        "hint": "报刊亭的杂志架",
+        "dialogueId": "dlg-newsstand",
+        "url": "https://eaglewzw.github.io/2025/12/15/Drone-10k/",
+        "linkLabel": "打开博客文章《Drone-10k》"
+      },
+      {
+        "id": "stationery-window",
+        "type": "dialogue",
+        "at": [
+          33,
+          7
+        ],
+        "hint": "文具店的橱窗",
+        "dialogueId": "dlg-stationery"
+      },
+      {
+        "id": "noodle-aroma",
+        "type": "dialogue",
+        "at": [
+          12,
+          26
+        ],
+        "hint": "面馆的香气",
+        "dialogueId": "dlg-noodle"
+      },
+      {
+        "id": "store-fridge",
+        "type": "dialogue",
+        "at": [
+          6,
+          26
+        ],
+        "hint": "小卖部的冰柜",
+        "dialogueId": "dlg-fridge"
+      },
+      {
+        "id": "market-square",
+        "type": "dialogue",
+        "at": [
+          8,
+          30
+        ],
+        "hint": "集市的吆喝声",
+        "dialogueId": "dlg-market"
+      },
+      {
+        "id": "gate-bell",
+        "type": "dialogue",
+        "at": [
+          14,
+          12
+        ],
+        "hint": "学校大门",
+        "dialogueId": "dlg-gatebell"
+      },
+      {
+        "id": "classroom-front",
+        "type": "dialogue",
+        "at": [
+          12,
+          6
+        ],
+        "hint": "教学楼的教室",
+        "dialogueId": "dlg-classroom"
+      },
+      {
+        "id": "office-door",
+        "type": "dialogue",
+        "at": [
+          17,
+          7
+        ],
+        "hint": "老师们的办公室",
+        "dialogueId": "dlg-office",
+        "isDemo": true
+      },
+      {
+        "id": "recess-yard",
+        "type": "dialogue",
+        "at": [
+          8,
+          9
+        ],
+        "hint": "课间的操场",
+        "dialogueId": "dlg-recess"
+      },
+      {
+        "id": "nightstudy-window",
+        "type": "memory",
+        "at": [
+          13,
+          6
+        ],
+        "hint": "晚自习亮着的窗",
+        "dialogueId": "dlg-nightstudy",
+        "memoryId": "mem-junior-years",
+        "isDemo": true
+      },
+      {
+        "id": "senior-wing",
+        "type": "memory",
+        "at": [
+          10,
+          9
+        ],
+        "hint": "高中部的晚自习",
+        "dialogueId": "dlg-senior-wing",
+        "memoryId": "mem-high-school-years",
+        "isDemo": true
+      },
+      {
+        "id": "road-village",
+        "type": "passage",
+        "tiles": [
+          [
+            29,
+            0
+          ],
+          [
+            30,
+            0
+          ]
+        ],
+        "hint": "北去的路 · 下湖源村",
+        "to": {
+          "scene": "village",
+          "spawn": "from-county"
+        }
+      },
+      {
+        "id": "road-shenzhen",
+        "type": "passage",
+        "tiles": [
+          [
+            55,
+            20
+          ],
+          [
+            55,
+            21
+          ]
+        ],
+        "hint": "沿大道往东 · 深圳",
+        "to": {
+          "scene": "shenzhen",
+          "spawn": "from-county"
+        },
+        "chapter": "ch-08-shenzhen"
+      }
     ]
   }
 });

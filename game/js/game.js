@@ -125,6 +125,12 @@
     e.collider.y = e.baseline - TILE + 4;
   }
 
+  function chapterUnlockedById(chapterId) {
+    const chapters = DATA.chapters || [];
+    const idx = chapters.findIndex(function (c) { return c.id === chapterId; });
+    if (idx < 0) return true;
+    return chapterUnlocked(chapters, idx);
+  }
   function chapterUnlocked(chapters, idx) {
     // freeRoam（浏览模式）：全部开放
     if (DATA.config && DATA.config.freeRoam) return true;
@@ -227,8 +233,32 @@
       });
     }
 
-    // 3. 互动对象（挂到对应坐标的实体上，或独立成区域）
+    // 2.5 过道：走进即切换场景的触发区（登记矩形 + 接近提示）
+    const passageZones = [];
     for (const conf of (def.interactables || [])) {
+      if (conf.type !== 'passage') continue;
+      const tiles = conf.tiles || (conf.at ? [conf.at] : []);
+      if (!tiles.length) continue;
+      let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, sx = 0, sy = 0;
+      for (const [tx, ty] of tiles) {
+        minX = Math.min(minX, tx * TILE); minY = Math.min(minY, ty * TILE);
+        maxX = Math.max(maxX, tx * TILE + TILE); maxY = Math.max(maxY, ty * TILE + TILE);
+        sx += tx; sy += ty;
+      }
+      passageZones.push({
+        id: conf.id, type: 'passage',
+        cx: sx / tiles.length * TILE + TILE / 2,
+        cy: sy / tiles.length * TILE + TILE / 2,
+        hint: conf.hint || '继续往前走',
+        to: conf.to || {},
+        chapter: conf.chapter || null,
+        rect: { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
+      });
+    }
+
+    // 3. 互动对象（挂到对应坐标的实体上，或独立成区域；passage 走过即触发，不走这里）
+    for (const conf of (def.interactables || [])) {
+      if (conf.type === 'passage') continue;
       const at = conf.at;
       if (!at) continue;
       const cx = at[0] * TILE + TILE / 2, cy = at[1] * TILE + TILE / 2;
@@ -266,6 +296,7 @@
       ground: ground, waterCells: waterCells,
       entities: entities, colliders: colliders,
       interactZones: interactZones,
+      passageZones: passageZones,
       entitySprites: null
     };
     G.player.x = spawn.x; G.player.y = spawn.y;
@@ -273,6 +304,16 @@
     G.camera.x = cameraTarget(G.player.x, W, viewW());
     G.camera.y = cameraTarget(G.player.y, H, viewH());
     G.interactTarget = null;
+
+    // 出生点若落在过道里（例如从过道另一头走来），预上锁防立刻回传
+    G.passageLock = null;
+    if (G.scene.passageZones) {
+      const fx = G.player.x - 5, fy = G.player.y - 6, fw = 10, fh = 6;
+      for (const z of G.scene.passageZones) {
+        const r = z.rect;
+        if (fx < r.x + r.w && fx + fw > r.x && fy < r.y + r.h && fy + fh > r.y) { G.passageLock = z.id; break; }
+      }
+    }
 
     $('hud-location').textContent = def.name || def.id;
     G.save.sceneId = def.id;
@@ -452,6 +493,30 @@
         G.player.animT = 0;
       }
 
+      // 过道：走进即过渡（防重复锁：走出过道后才重新武装）
+      if (G.scene.passageZones && G.scene.passageZones.length) {
+        const fx = G.player.x - 5, fy = G.player.y - 6, fw = 10, fh = 6;
+        let inside = null;
+        for (const z of G.scene.passageZones) {
+          const r = z.rect;
+          if (fx < r.x + r.w && fx + fw > r.x && fy < r.y + r.h && fy + fh > r.y) { inside = z; break; }
+        }
+        if (inside) {
+          if (G.passageLock !== inside.id) {
+            G.passageLock = inside.id;
+            const gateOk = !inside.chapter || (DATA.config && DATA.config.freeRoam) ||
+              chapterUnlockedById(inside.chapter);
+            if (gateOk) {
+              switchScene(inside.to.scene, inside.to.spawn || 'default');
+            } else {
+              toast('（这条路还没走到那一段——先把眼前的回忆收集齐吧。）');
+            }
+          }
+        } else if (G.passageLock) {
+          G.passageLock = null;
+        }
+      }
+
       // 最近的可互动对象
       let best = null, bestD = INTERACT_RADIUS;
       for (const z of G.scene.interactZones) {
@@ -597,6 +662,7 @@
     if (t.kind === 'npc' && t.ent) t.ent.faceDir = faceTowards(t.ent);
     window.GameAudio.blip();
     switch (t.type) {
+      case 'passage': return; // 走进过道自动触发，无需按键
       case 'dialogue': openDialogue(t.dialogueId, null); break;
       case 'memory':
         if (t.dialogueId) openDialogue(t.dialogueId, t.memoryId);
@@ -814,8 +880,7 @@
     $('hint').hidden = true;
     const body = $('panel-body');
     body.innerHTML = '';
-    if (name === 'map') buildMapPanel(body);
-    else if (name === 'book') buildBookPanel(body);
+    if (name === 'book') buildBookPanel(body);
     else if (name === 'settings') buildSettingsPanel(body);
     else buildHelpPanel(body);
     $('panel').hidden = false;
@@ -839,64 +904,6 @@
     head.appendChild(h);
     head.appendChild(close);
     return head;
-  }
-
-  // —— 人生地图 ——
-  function buildMapPanel(root) {
-    root.appendChild(panelHeader('人生地图'));
-    const note = el('p', 'panel-note',
-      '人生是一段一段走过的：收集当前章节的全部回忆，下一段旅程就会解锁。');
-    root.appendChild(note);
-
-    const chapters = DATA.chapters || [];
-    let prevUnlocked = true;
-    for (let i = 0; i < chapters.length; i++) {
-      const ch = chapters[i];
-      const prog = chapterProgress(ch);
-      const unlocked = chapterUnlocked(chapters, i);
-      const completed = unlocked && prog.complete && prog.total > 0;
-
-      const card = el('div', 'chapter-card ' +
-        (unlocked ? 'chapter-open' : 'chapter-locked'));
-      const top = el('div', 'chapter-top');
-      const title = el('h3', 'chapter-title',
-        (unlocked ? '' : '🔒 ') + (ch.title || '未命名章节'));
-      top.appendChild(title);
-      const badges = el('span', 'chapter-badges');
-      if (ch.isDemo) badges.appendChild(el('em', 'badge badge-demo', '演示'));
-      badges.appendChild(el('em',
-        'badge ' + (completed ? 'badge-done' : unlocked ? 'badge-open' : 'badge-lock'),
-        completed ? '已完成' : unlocked ? '可探索' : '待解锁'));
-      top.appendChild(badges);
-      card.appendChild(top);
-
-      if (ch.period) card.appendChild(el('p', 'chapter-period', ch.period));
-      if (ch.description) card.appendChild(el('p', 'chapter-desc', ch.description));
-
-      if (unlocked && prog.total > 0) {
-        const progLine = el('p', 'chapter-progress-line',
-          '本章回忆 ' + prog.found + ' / ' + prog.total +
-          (prog.complete ? ' · 已集齐 ✓' : ''));
-        card.appendChild(progLine);
-      } else if (!unlocked) {
-        const prev = chapters[i - 1];
-        card.appendChild(el('p', 'chapter-desc chapter-desc-empty',
-          '收集「' + (prev ? prev.title : '上一章') + '」的全部回忆后解锁。'));
-      }
-
-      if (unlocked && ch.sceneId && sceneById(ch.sceneId)) {
-        const btn = el('button', 'btn-pixel btn-primary',
-          completed ? '重访这个场景' : '进入这个场景');
-        btn.addEventListener('click', function () {
-          closePanel();
-          switchScene(ch.sceneId, 'default');
-        });
-        card.appendChild(btn);
-      } else if (unlocked) {
-        card.appendChild(el('p', 'chapter-desc chapter-desc-empty', '（这个章节还没有绑定场景。）'));
-      }
-      root.appendChild(card);
-    }
   }
 
   // —— 回忆手册 ——
@@ -1242,11 +1249,6 @@
     window.addEventListener('resize', function () { resize(); });
 
     // 顶部按钮
-    $('btn-map').addEventListener('click', function () {
-      window.GameAudio.unlock();
-      if (G.mode === 'panel') { closePanel(); return; }
-      openPanel('map');
-    });
     $('btn-book').addEventListener('click', function () {
       window.GameAudio.unlock();
       G.bookDirty = false;

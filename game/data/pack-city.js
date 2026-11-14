@@ -28,101 +28,261 @@ window.LIFE_DATA = window.LIFE_DATA || {};
 // ---------------------------------------------------------------
 window.LIFE_DATA.scenes = window.LIFE_DATA.scenes || {};
 Object.assign(window.LIFE_DATA.scenes, {
-  shenzhen: {
-    id: 'shenzhen',
-    name: '深圳 · 科技园与城中村',
-    indoor: false,
-
-    map: [
-      'wwwwwwwwwwwwwwwwwwwwwwwwwyaaaaaayTT.TT.TT.TT.TT.TT.TT.TT.TT.',
-      'pBppppppBppppp.ppppBppp.pyaaaaaay...........................',
-      'yyyypyypyyyppyyyyyyyyyyyyyaaaaaay...........................',
-      'yyyypyypyyyppyyyyyyyyyyyyyaaaaaay..................T........',
-      'yyyHpyHpyHyppyyymyyymyyyyyaaaaaay...........................',
-      'yyyyyyyyyyyppyyyyyyyyyyyyyaaaaaay....Q..Q..Q..Q...,......T..',
-      'yByyy,yyyyyppLyyyyyyyyyyyyaaaaaay..yyyyyyyyyyyyy............',
-      'yyyyyyyoyyypppppppppyyyyyyaaaaaay.wyyyyyyyyyy,yy.......,....',
-      'yyyyyyyyyyyppyyyyyyyyyyyyyaaaaaay.wy,yyyyyyyyyyyppppppp.....',
-      'yyyyyyyyyyyppyy,yyByyyyyyyaaaaaay.wyyyyyyyyyyyyy.....B......',
-      'yyyyyyyyyyyppyyyyyyyyTyyyyaaaaaay.wyy,y,y,y,yyyy..........,.',
-      'yyyHyyHyyyyppyyyyyyyyyyyyyaaaaaay.pppppyyyyyyyyy............',
-      'y,yyyyyyyyyppyyyyyyyyyoyyyaaaaaay.pppppyyyyyyyyy.T..........',
-      'yyyLyyyyyyyppyyyyyyyyyyyyyaaaaaay.wyLyyyyyyyyyLy....,.......',
-      'yyyyyyyyyByppyyyyyyyyyyyyyaaaaaay.wyyyyyyyyyyyyy........T...',
-      'yyyyyyyyyyyppyyyyyyyyyyyyyaaaaaay.wyyyyyyyyyyyyyL...........',
-      'yyyyyyyyyyyppyyyyyyyyyyyyy======y.wyyyyyyyyyyyyy............',
-      'yyqyyqpyqyyppynyyyyyyyyyqy======y...........................',
-      'TyyyyyyyyyTyyyyyyyyTyyyyyiaaaaaaiyyyTyyyyyyytyyyyyyTyyyyyTyy',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaa===aaaaaaaaaaaaaaaaaaaaaaaaa',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaa===aaaaaaaaaaaaaaaaaaaaaaaaa',
-      '-----------------------===aaaaaa===-------------------------',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaa===aaaaaaaaaaaaaaaaaaaaaaaaa',
-      'aaaaaaaaaaaaaaaaaaaaaaa===aaaaaa===aaaaaaaaaaaaaaaaaaaaaaaaa',
-      'yyTyyyyyyyyytyyyyTyyyTyyyiaaaaaaiyyyyTyyyTyyyyyyyyyyTyyyyTyy',
-      'wwwwwwwwwwpppwwwww.......y======yy......p...................',
-      'yyyyyyyyyyypyyyyyyyyyyyy,y======yy.n.L..p............T......',
-      'yyyyyyyyyyypyyyyyyyLyyyyyyaaaaaayy....ppppppppppppp......,..',
-      'yyyyyypyyyypyyyypyyyyyTyyyaaaaaayy.....,....p.....,.........',
-      'yyyyyypyyyypyyyypyyyyyyyyyaaaaaayy..........p..T....o.......',
-      'yyyyyypyyyypyyyypyyyyyy,yyaaaaaayy....T...B.p...............',
-      'yyyymypyymypyymypyyyByyyyyaaaaaayy..........p............T..',
-      'yyyyyypyyyypyyyypyyyyyyyyyaaaaaayy..........p...............',
-      'ypppppppppppppppppyyyyyyyyaaaaaayy..........o......B........',
-      'yyyyyypyyyypyyyyyyyyyyyyyyaaaaaayy..........................',
-      'yyyyyypyyyypyyyyyyyyyyyyyyaaaaaayy...........,....L.....B...',
-      'yyyyyypyyyypyyyyyyyyyyyyyyaaaaaayy......T............,......',
-      'yyyymypyymypyymyyyyyyyyyyyaaaaaayy........,.................',
-      '......p....p.............yaaaaaayy..............T...........',
-      '......p.o..p.............yaaaaaayy....,.....................',
-      '...T..p....p.....T..,....yaaaaaayy............B........T....',
-      '......p...Tp.,...........yaaaaaayy..T.......................',
-      '......p....p...B.........yaaaaaayyppppp.....................',
-      '......p....p.............yaaaaaayy..........................'
-    ],
-
-    // 场景自带图例：字符 → 地块 / 实体 / 碰撞（引擎会合并进全局图例）
-    legend: {
-      'a': { tile: 'asphalt' },
-      '-': { tile: 'roadline' },
-      '=': { tile: 'crosswalk' },
-      'y': { tile: 'yard' },
-      'Q': { tile: 'asphalt', entity: 'office', solid: true },
-      'H': { tile: 'asphalt', entity: 'cw', solid: true },
-      'm': { tile: 'asphalt', entity: 'resident', solid: true },
-      'n': { tile: 'asphalt', entity: 'conv', solid: true },
-      'q': { tile: 'asphalt', entity: 'shop', solid: true },
-      't': { tile: 'asphalt', entity: 'busstop', solid: true },
-      'i': { tile: 'asphalt', entity: 'tlight', solid: true },
-      'w': { tile: 'brickwall', solid: true }
-    },
-
-    spawnPoints: {
-      'default': [12, 18]   // 城中村巷口正对的公交站人行道
-    },
-
-    characters: [
-      { id: 'city-colleague', at: [51, 8] },   // 园区小径上的同事
-      { id: 'city-clerk', at: [35, 27] }      // 公园口便利店的店员
-    ],
-
-    interactables: [
-      // —— 氛围类 ——
-      { id: 'lobby-gate',     type: 'dialogue', at: [40, 6],  hint: '写字楼大堂', dialogueId: 'dlg-lobby', isDemo: true },
-      { id: 'stall-changfen', type: 'dialogue', at: [6, 17],  hint: '巷口的肠粉摊', dialogueId: 'dlg-stall', isDemo: true },
-      { id: 'conv-night',     type: 'dialogue', at: [14, 18], hint: '深夜便利店', dialogueId: 'dlg-convnight', isDemo: true },
-      { id: 'bench-park',     type: 'dialogue', at: [44, 33], hint: '公园长椅', dialogueId: 'dlg-bench', isDemo: true },
-      { id: 'roof-view',      type: 'dialogue', at: [14, 32], hint: '居民楼的天台', dialogueId: 'dlg-roof', isDemo: true },
-      // —— 故事类（占位故事，读完收录回忆）——
-      { id: 'mem-ticket',     type: 'memory',   at: [12, 24], hint: '公交亭下的旧车票', dialogueId: 'dlg-ticket', memoryId: 'mem-city-ticket', isDemo: true },
-      { id: 'mem-window',     type: 'memory',   at: [6, 12],  hint: '握手楼的窗', dialogueId: 'dlg-window', memoryId: 'mem-city-window', isDemo: true },
-      { id: 'mem-overtime',   type: 'memory',   at: [43, 6],  hint: '凌晨还亮着的窗', dialogueId: 'dlg-overtime', memoryId: 'mem-city-overtime', isDemo: true },
-      { id: 'mem-launch',     type: 'memory',   at: [52, 10], hint: '园区草坪', dialogueId: 'dlg-launch', memoryId: 'mem-city-launch', isDemo: true },
-      // —— 回人生地图 ——
-      { id: 'map-west',       type: 'chapterMap', at: [1, 21],  hint: '回人生地图看看' },
-      { id: 'map-south',      type: 'chapterMap', at: [28, 42], hint: '回人生地图看看' }
-    ]
-  }
-});
+    "shenzhen": {
+      "id": "shenzhen",
+      "name": "深圳 · 科技园与城中村",
+      "indoor": false,
+      "map": [
+        "wwwwwwwwwwwwwwwwwwwwwwwwwyaaaaaayTT.TT.TT.TT.TT.TT.TT.TT.TT.",
+        "pBppppppBppppp.ppppBppp.pyaaaaaay...........................",
+        "yyyypyypyyyppyyyyyyyyyyyyyaaaaaay...........................",
+        "yyyypyypyyyppyyyyyyyyyyyyyaaaaaay..................T........",
+        "yyyHpyHpyHyppyyymyyymyyyyyaaaaaay...........................",
+        "yyyyyyyyyyyppyyyyyyyyyyyyyaaaaaay....Q..Q..Q..Q...,......T..",
+        "yByyy,yyyyyppLyyyyyyyyyyyyaaaaaay..yyyyyyyyyyyyy............",
+        "yyyyyyyoyyypppppppppyyyyyyaaaaaay.wyyyyyyyyyy,yy.......,....",
+        "yyyyyyyyyyyppyyyyyyyyyyyyyaaaaaay.wy,yyyyyyyyyyyppppppp.....",
+        "yyyyyyyyyyyppyy,yyByyyyyyyaaaaaay.wyyyyyyyyyyyyy.....B......",
+        "yyyyyyyyyyyppyyyyyyyyTyyyyaaaaaay.wyy,y,y,y,yyyy..........,.",
+        "yyyHyyHyyyyppyyyyyyyyyyyyyaaaaaay.pppppyyyyyyyyy............",
+        "y,yyyyyyyyyppyyyyyyyyyoyyyaaaaaay.pppppyyyyyyyyy.T..........",
+        "yyyLyyyyyyyppyyyyyyyyyyyyyaaaaaay.wyLyyyyyyyyyLy....,.......",
+        "yyyyyyyyyByppyyyyyyyyyyyyyaaaaaay.wyyyyyyyyyyyyy........T...",
+        "yyyyyyyyyyyppyyyyyyyyyyyyyaaaaaay.wyyyyyyyyyyyyyL...........",
+        "yyyyyyyyyyyppyyyyyyyyyyyyy======y.wyyyyyyyyyyyyy............",
+        "yyqyyqpyqyyppynyyyyyyyyyqy======y...........................",
+        "TyyyyyyyyyTyyyyyyyyTyyyyyiaaaaaaiyyyTyyyyyyytyyyyyyTyyyyyTyy",
+        "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaa===aaaaaaaaaaaaaaaaaaaaaaaaa",
+        "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaa===aaaaaaaaaaaaaaaaaaaaaaaaa",
+        "-----------------------===aaaaaa===-------------------------",
+        "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaa===aaaaaaaaaaaaaaaaaaaaaaaaa",
+        "aaaaaaaaaaaaaaaaaaaaaaa===aaaaaa===aaaaaaaaaaaaaaaaaaaaaaaaa",
+        "yyTyyyyyyyyytyyyyTyyyTyyyiaaaaaaiyyyyTyyyTyyyyyyyyyyTyyyyTyy",
+        "wwwwwwwwwwpppwwwww.......y======yy......p...................",
+        "yyyyyyyyyyypyyyyyyyyyyyy,y======yy.n.L..p............T......",
+        "yyyyyyyyyyypyyyyyyyLyyyyyyaaaaaayy....ppppppppppppp......,..",
+        "yyyyyypyyyypyyyypyyyyyTyyyaaaaaayy.....,....p.....,.........",
+        "yyyyyypyyyypyyyypyyyyyyyyyaaaaaayy..........p..T....o.......",
+        "yyyyyypyyyypyyyypyyyyyy,yyaaaaaayy....T...B.p...............",
+        "yyyymypyymypyymypyyyByyyyyaaaaaayy..........p............T..",
+        "yyyyyypyyyypyyyypyyyyyyyyyaaaaaayy..........p...............",
+        "ypppppppppppppppppyyyyyyyyaaaaaayy..........o......B........",
+        "yyyyyypyyyypyyyyyyyyyyyyyyaaaaaayy..........................",
+        "yyyyyypyyyypyyyyyyyyyyyyyyaaaaaayy...........,....L.....B...",
+        "yyyyyypyyyypyyyyyyyyyyyyyyaaaaaayy......T............,......",
+        "yyyymypyymypyymyyyyyyyyyyyaaaaaayy........,.................",
+        "......p....p.............yaaaaaayy..............T...........",
+        "......p.o..p.............yaaaaaayy....,.....................",
+        "...T..p....p.....T..,....yaaaaaayy............B........T....",
+        "......p...Tp.,...........yaaaaaayy..T.......................",
+        "......p....p...B.........yaaaaaayyppppp.....................",
+        "......p....p.............yaaaaaayy.........................."
+      ],
+      "legend": {
+        "a": {
+          "tile": "asphalt"
+        },
+        "-": {
+          "tile": "roadline"
+        },
+        "=": {
+          "tile": "crosswalk"
+        },
+        "y": {
+          "tile": "yard"
+        },
+        "Q": {
+          "tile": "asphalt",
+          "entity": "office",
+          "solid": true
+        },
+        "H": {
+          "tile": "asphalt",
+          "entity": "cw",
+          "solid": true
+        },
+        "m": {
+          "tile": "asphalt",
+          "entity": "resident",
+          "solid": true
+        },
+        "n": {
+          "tile": "asphalt",
+          "entity": "conv",
+          "solid": true
+        },
+        "q": {
+          "tile": "asphalt",
+          "entity": "shop",
+          "solid": true
+        },
+        "t": {
+          "tile": "asphalt",
+          "entity": "busstop",
+          "solid": true
+        },
+        "i": {
+          "tile": "asphalt",
+          "entity": "tlight",
+          "solid": true
+        },
+        "w": {
+          "tile": "brickwall",
+          "solid": true
+        }
+      },
+      "spawnPoints": {
+        "default": [
+          12,
+          18
+        ],
+        "from-county": [
+          2,
+          20
+        ]
+      },
+      "characters": [
+        {
+          "id": "city-colleague",
+          "at": [
+            51,
+            8
+          ]
+        },
+        {
+          "id": "city-clerk",
+          "at": [
+            35,
+            27
+          ]
+        }
+      ],
+      "interactables": [
+        {
+          "id": "lobby-gate",
+          "type": "dialogue",
+          "at": [
+            40,
+            6
+          ],
+          "hint": "写字楼大堂",
+          "dialogueId": "dlg-lobby",
+          "isDemo": true
+        },
+        {
+          "id": "stall-changfen",
+          "type": "dialogue",
+          "at": [
+            6,
+            17
+          ],
+          "hint": "巷口的肠粉摊",
+          "dialogueId": "dlg-stall",
+          "isDemo": true
+        },
+        {
+          "id": "conv-night",
+          "type": "dialogue",
+          "at": [
+            14,
+            18
+          ],
+          "hint": "深夜便利店",
+          "dialogueId": "dlg-convnight",
+          "isDemo": true
+        },
+        {
+          "id": "bench-park",
+          "type": "dialogue",
+          "at": [
+            44,
+            33
+          ],
+          "hint": "公园长椅",
+          "dialogueId": "dlg-bench",
+          "isDemo": true
+        },
+        {
+          "id": "roof-view",
+          "type": "dialogue",
+          "at": [
+            14,
+            32
+          ],
+          "hint": "居民楼的天台",
+          "dialogueId": "dlg-roof",
+          "isDemo": true
+        },
+        {
+          "id": "mem-ticket",
+          "type": "memory",
+          "at": [
+            12,
+            24
+          ],
+          "hint": "公交亭下的旧车票",
+          "dialogueId": "dlg-ticket",
+          "memoryId": "mem-city-ticket",
+          "isDemo": true
+        },
+        {
+          "id": "mem-window",
+          "type": "memory",
+          "at": [
+            6,
+            12
+          ],
+          "hint": "握手楼的窗",
+          "dialogueId": "dlg-window",
+          "memoryId": "mem-city-window",
+          "isDemo": true
+        },
+        {
+          "id": "mem-overtime",
+          "type": "memory",
+          "at": [
+            43,
+            6
+          ],
+          "hint": "凌晨还亮着的窗",
+          "dialogueId": "dlg-overtime",
+          "memoryId": "mem-city-overtime",
+          "isDemo": true
+        },
+        {
+          "id": "mem-launch",
+          "type": "memory",
+          "at": [
+            52,
+            10
+          ],
+          "hint": "园区草坪",
+          "dialogueId": "dlg-launch",
+          "memoryId": "mem-city-launch",
+          "isDemo": true
+        },
+        {
+          "id": "road-county",
+          "type": "passage",
+          "tiles": [
+            [
+              0,
+              20
+            ],
+            [
+              0,
+              21
+            ]
+          ],
+          "hint": "沿大道往西 · 县城",
+          "to": {
+            "scene": "county",
+            "spawn": "from-shenzhen"
+          }
+        }
+      ]
+    }
+  });
 
 // ---------------------------------------------------------------
 //  人物（均为演示人物）
