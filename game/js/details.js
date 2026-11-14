@@ -213,6 +213,27 @@ window.LGDetails = (function () {
       }
       SPR.clothesline = c;
     }
+    // 石凳 14×8
+    {
+      const [c, g] = makeCanvas(14, 8);
+      rectO(g, 1, 1, 12, 5, C.stoneA);
+      g.fillStyle = C.stoneD; g.fillRect(1, 4, 12, 1);
+      rectO(g, 2, 5, 2, 2, C.stoneD);
+      rectO(g, 10, 5, 2, 2, C.stoneD);
+      SPR.bench2 = c;
+    }
+    // 花坛 18×10
+    {
+      const [c, g] = makeCanvas(18, 10);
+      rectO(g, 0, 0, 18, 8, '#a55a42');      // 砖沿
+      g.fillStyle = '#8e4a35'; g.fillRect(0, 3, 18, 1);
+      g.fillStyle = '#5c9247'; g.fillRect(2, 4, 14, 3);  // 绿叶
+      g.fillStyle = C.flowerW;
+      px(g, 4, 4, C.flowerW); px(g, 8, 5, C.flowerY); px(g, 12, 4, C.flowerP); px(g, 6, 6, C.flowerY);
+      g.fillStyle = '#b5674d'; g.fillRect(0, 8, 18, 1);
+      SPR.planter = c;
+    }
+
     // 鸡（两帧） 10×8
     {
       SPR.chicken = [0, 1].map(f => {
@@ -318,8 +339,8 @@ window.LGDetails = (function () {
     const vocab = sceneKind === 'village'
       ? ['firewood', 'jar', 'mill', 'haystack', 'clothesline', 'bin']
       : sceneKind === 'county'
-        ? ['pole', 'stool', 'roaststove', 'bikerack', 'bin', 'hydrant']
-        : ['bikerack', 'locker', 'bin', 'hydrant'];
+        ? ['pole', 'stool', 'roaststove', 'bikerack', 'bin', 'hydrant', 'planter', 'bench2']
+        : ['bikerack', 'locker', 'bin', 'hydrant', 'planter', 'bench2'];
     for (const [x, y] of spots) {
       items.push({ type: vocab[(si++) % vocab.length], x: x, y: y });
     }

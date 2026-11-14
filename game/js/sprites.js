@@ -499,6 +499,19 @@ window.PixelArt = (function () {
     return c;
   }
 
+  function tileIsland() { // 河心小岛：泡沫岸线 + 草地中心（2×2 拼出一座小花岛）
+    const [c, g] = makeCanvas(TILE, TILE);
+    g.fillStyle = P.waterB; g.fillRect(0, 0, TILE, TILE);
+    g.fillStyle = P.foam;
+    g.fillRect(0, 0, TILE, 2); g.fillRect(0, 14, TILE, 2);
+    g.fillRect(0, 0, 2, TILE); g.fillRect(14, 0, 2, TILE);
+    g.fillStyle = P.grassA; g.fillRect(3, 3, 10, 10);
+    g.fillStyle = P.grassC; g.fillRect(3, 3, 10, 1); g.fillRect(3, 3, 1, 10);
+    g.fillStyle = P.grassB;
+    g.fillRect(5, 6, 3, 1); g.fillRect(8, 9, 2, 1); px(g, 6, 11, P.grassD);
+    return c;
+  }
+
   function tileBridge() {
     const [c, g] = makeCanvas(TILE, TILE);
     g.fillStyle = P.waterB; g.fillRect(0, 0, TILE, TILE);
@@ -739,7 +752,8 @@ window.PixelArt = (function () {
         roof: tileRoof(), wall: tileWall(), window: tileWindow(), door: tileDoor(),
         floor: tileFloor(), iwall: tileIWall(), rug: tileRug(),
         asphalt: tileAsphalt(), roadline: tileRoadline(), crosswalk: tileCrosswalk(),
-        brickwall: tileBrickwall(), yard: tileYard(), bridge: tileBridge()
+        brickwall: tileBrickwall(), yard: tileYard(), bridge: tileBridge(),
+        island: tileIsland()
       },
       entities: {
         tree: [entTree(0), entTree(1)],
