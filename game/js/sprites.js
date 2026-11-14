@@ -446,6 +446,235 @@ window.PixelArt = (function () {
     return c;
   }
 
+
+  // =============================================================
+  //  建筑素材库（村落 / 县城 / 城市内容包共用）
+  //  全部程序化原创像素，风格与上面色板一致
+  // =============================================================
+
+  function tileAsphalt() {
+    const [c, g] = makeCanvas(TILE, TILE);
+    const rnd = mulberry32(88);
+    g.fillStyle = '#585c60'; g.fillRect(0, 0, TILE, TILE);
+    for (let i = 0; i < 8; i++) px(g, (rnd() * TILE) | 0, (rnd() * TILE) | 0, rnd() < 0.5 ? '#4c5054' : '#666a6e');
+    return c;
+  }
+
+  function tileRoadline() {
+    const [c, g] = makeCanvas(TILE, TILE);
+    g.drawImage(tileAsphalt(), 0, 0);
+    g.fillStyle = '#e8d34e';
+    g.fillRect(7, 2, 2, 6);
+    return c;
+  }
+
+  function tileCrosswalk() {
+    const [c, g] = makeCanvas(TILE, TILE);
+    g.drawImage(tileAsphalt(), 0, 0);
+    g.fillStyle = '#e6e3da';
+    for (let x = 1; x < TILE; x += 5) g.fillRect(x, 1, 3, TILE - 2);
+    return c;
+  }
+
+  function tileBrickwall() {
+    const [c, g] = makeCanvas(TILE, TILE);
+    g.fillStyle = '#a55a42'; g.fillRect(0, 0, TILE, TILE);
+    g.fillStyle = '#8e4a35';
+    for (let y = 3; y < TILE; y += 4) g.fillRect(0, y, TILE, 1);
+    for (let y = 0; y < TILE; y += 4) {
+      const off = (y / 4) % 2 ? 4 : 0;
+      for (let x = off; x < TILE; x += 8) g.fillRect(x, y, 1, 4);
+    }
+    g.fillStyle = '#b5674d';
+    for (let i = 0; i < 5; i++) px(g, (i * 5 + 2) % TILE, (i * 3 + 1) % TILE, '#b5674d');
+    return c;
+  }
+
+  function tileYard() {
+    const [c, g] = makeCanvas(TILE, TILE);
+    const rnd = mulberry32(66);
+    g.fillStyle = '#c9c2b0'; g.fillRect(0, 0, TILE, TILE);
+    for (let i = 0; i < 6; i++) px(g, (rnd() * TILE) | 0, (rnd() * TILE) | 0, '#bab3a0');
+    g.fillStyle = '#b5ae9c'; g.fillRect(0, 7, TILE, 1); g.fillRect(9, 0, 1, TILE);
+    return c;
+  }
+
+  function tileBridge() {
+    const [c, g] = makeCanvas(TILE, TILE);
+    g.fillStyle = P.waterB; g.fillRect(0, 0, TILE, TILE);
+    g.fillStyle = '#8a6a48'; g.fillRect(0, 2, TILE, 12);
+    g.fillStyle = '#75563a';
+    for (let x = 1; x < TILE; x += 4) g.fillRect(x, 2, 1, 12);
+    g.fillStyle = '#9a7a55'; g.fillRect(0, 2, TILE, 1); g.fillRect(0, 13, TILE, 1);
+    return c;
+  }
+
+  function winRow(g, x, y, w, n, gw) { // 一排窗
+    for (let i = 0; i < n; i++) {
+      rectO(g, x + i * (gw + 2), y, gw, 6, P.glass);
+      g.fillStyle = P.timber; g.fillRect(x + i * (gw + 2) + gw / 2 - 1, y, 1, 6);
+    }
+  }
+
+  function entSelfhouse() { // 村落自建房 24×28
+    const [c, g] = makeCanvas(24, 28);
+    g.fillStyle = '#b5674d'; g.fillRect(1, 6, 22, 21);
+    g.fillStyle = '#9d563e';
+    for (let y = 9; y < 27; y += 4) g.fillRect(1, y, 22, 1);
+    g.fillStyle = '#8a4436'; g.fillRect(0, 4, 24, 3);
+    g.fillStyle = '#a3563f'; g.fillRect(0, 4, 24, 1);
+    rectO(g, 3, 11, 6, 6, P.glass);
+    g.fillStyle = P.timber; g.fillRect(5, 11, 1, 6); g.fillRect(3, 13, 6, 1);
+    rectO(g, 15, 11, 6, 6, P.glass);
+    g.fillStyle = P.timber; g.fillRect(17, 11, 1, 6); g.fillRect(15, 13, 6, 1);
+    rectO(g, 9, 20, 7, 7, P.doorWood);
+    px(g, 14, 23, P.metal);
+    return c;
+  }
+
+  function entResident() { // 居民楼 28×46
+    const [c, g] = makeCanvas(28, 46);
+    g.fillStyle = '#ddd3b8'; g.fillRect(1, 2, 26, 43);
+    g.fillStyle = '#c7bca0';
+    for (let y = 10; y < 44; y += 11) g.fillRect(1, y, 26, 1);
+    g.fillStyle = '#a8987a'; g.fillRect(0, 0, 28, 3);
+    for (let f = 0; f < 3; f++) {
+      const y = 6 + f * 11;
+      rectO(g, 3, y, 7, 7, P.glass);
+      g.fillStyle = P.timber; g.fillRect(6, y, 1, 7);
+      rectO(g, 18, y, 7, 7, P.glass);
+      g.fillStyle = P.timber; g.fillRect(21, y, 1, 7);
+      g.fillStyle = '#9a8f74'; g.fillRect(12, y + 2, 4, 7); // 阳台
+    }
+    rectO(g, 11, 39, 6, 6, P.doorWood);
+    return c;
+  }
+
+  function entShop() { // 临街店铺 26×26
+    const [c, g] = makeCanvas(26, 26);
+    g.fillStyle = '#e3d6b4'; g.fillRect(1, 2, 24, 23);
+    g.fillStyle = P.rug; g.fillRect(1, 2, 24, 6);          // 招牌
+    g.fillStyle = '#a94e3a'; g.fillRect(1, 7, 24, 1);
+    g.fillStyle = P.paper; g.fillRect(4, 4, 4, 2); g.fillRect(10, 4, 6, 2); g.fillRect(18, 4, 4, 2);
+    // 遮阳棚条纹
+    for (let x = 1; x < 25; x += 4) { g.fillStyle = P.rug; g.fillRect(x, 9, 4, 3); }
+    g.fillStyle = '#f1e4c1'; g.fillRect(1, 9, 24, 3);
+    for (let x = 2; x < 25; x += 6) { g.fillStyle = '#c96a52'; g.fillRect(x, 9, 3, 3); }
+    rectO(g, 3, 14, 8, 10, P.glass);                        // 玻璃窗
+    g.fillStyle = '#7a95b5'; g.fillRect(4, 16, 5, 6);
+    rectO(g, 15, 14, 8, 10, P.doorWood);                    // 门
+    px(g, 21, 19, P.metal);
+    return c;
+  }
+
+  function entStore() { // 小卖部 20×22
+    const [c, g] = makeCanvas(20, 22);
+    g.fillStyle = '#d9cba6'; g.fillRect(1, 2, 18, 19);
+    g.fillStyle = P.bookB; g.fillRect(1, 2, 18, 5);
+    g.fillStyle = P.paper; g.fillRect(4, 3, 8, 3);
+    rectO(g, 3, 10, 6, 7, P.glass);
+    rectO(g, 12, 10, 5, 9, P.doorWood);
+    g.fillStyle = '#7a95b5'; g.fillRect(4, 12, 3, 3);
+    px(g, 15, 14, P.metal);
+    return c;
+  }
+
+  function entSchoolGate() { // 学校大门 40×16
+    const [c, g] = makeCanvas(40, 16);
+    rectO(g, 1, 2, 7, 13, '#d8cbb0');                       // 左门柱
+    rectO(g, 32, 2, 7, 13, '#d8cbb0');
+    g.fillStyle = '#b5a88a'; g.fillRect(2, 3, 5, 1);
+    g.fillStyle = P.timber;
+    for (let x = 9; x < 31; x += 3) g.fillRect(x, 6, 1, 9); // 铁栅栏
+    g.fillRect(9, 6, 22, 2);
+    g.fillStyle = P.rug; g.fillRect(8, 1, 24, 5);           // 横幅
+    g.fillStyle = P.paper;
+    g.fillRect(11, 3, 3, 2); g.fillRect(16, 3, 3, 2); g.fillRect(21, 3, 3, 2); g.fillRect(26, 3, 3, 2);
+    return c;
+  }
+
+  function entSchool() { // 教学楼 44×38
+    const [c, g] = makeCanvas(44, 38);
+    g.fillStyle = '#e8ddc0'; g.fillRect(1, 4, 42, 33);
+    g.fillStyle = '#d3c6a2';
+    for (let y = 15; y < 36; y += 11) g.fillRect(1, y, 42, 1);
+    g.fillStyle = P.roof; g.fillRect(0, 0, 44, 5);
+    g.fillStyle = P.roofD; g.fillRect(0, 4, 44, 1);
+    // 楼梯间
+    g.fillStyle = '#d8ccb0'; g.fillRect(19, 2, 7, 35);
+    g.fillStyle = P.roof; g.fillRect(18, 0, 9, 3);
+    for (let f = 0; f < 3; f++) {
+      const y = 8 + f * 11;
+      winRow(g, 3, y, 40, 4, 6);
+    }
+    rectO(g, 20, 32, 6, 5, P.doorWood);
+    // 旗杆
+    g.fillStyle = '#9a9a94'; g.fillRect(41, 18, 1, 18);
+    g.fillStyle = P.rug; g.fillRect(42, 18, 1, 4);
+    return c;
+  }
+
+  function entOffice() { // 写字楼 36×54
+    const [c, g] = makeCanvas(36, 54);
+    g.fillStyle = '#8fa8c0'; g.fillRect(1, 2, 34, 51);
+    g.fillStyle = '#7c95ad';
+    for (let y = 4; y < 52; y += 8) g.fillRect(1, y, 34, 1);
+    for (let x = 4; x < 34; x += 8) g.fillRect(x, 2, 1, 51);
+    g.fillStyle = '#5f7a94'; g.fillRect(0, 0, 36, 3);
+    g.fillStyle = '#aec6dc';
+    for (let y = 5; y < 50; y += 8) for (let x = 5; x < 33; x += 8) g.fillRect(x, y, 4, 5);
+    rectO(g, 14, 46, 8, 7, '#3f4a63');
+    g.fillStyle = '#aec6dc'; g.fillRect(15, 47, 6, 1);
+    return c;
+  }
+
+  function entCw() { // 城中村握手楼 22×40
+    const [c, g] = makeCanvas(22, 40);
+    g.fillStyle = '#c4b490'; g.fillRect(0, 2, 10, 37);
+    g.fillStyle = '#b3a27c'; g.fillRect(11, 0, 10, 39);
+    g.fillStyle = '#a08e68'; g.fillRect(10, 0, 1, 40);
+    for (let f = 0; f < 5; f++) {
+      const y = 4 + f * 7;
+      rectO(g, 2, y, 5, 5, P.glass);
+      rectO(g, 14, y - 2, 5, 5, P.glass);
+    }
+    g.fillStyle = '#8a7c5e'; g.fillRect(0, 38, 10, 1); g.fillRect(11, 38, 10, 1);
+    rectO(g, 5, 34, 5, 5, P.doorWood);
+    return c;
+  }
+
+  function entBusstop() { // 公交车站 26×18
+    const [c, g] = makeCanvas(26, 18);
+    g.fillStyle = '#5f7a94'; g.fillRect(1, 2, 24, 2);       // 顶棚
+    g.fillStyle = '#7c95ad'; g.fillRect(1, 4, 24, 1);
+    rectO(g, 2, 4, 2, 13, '#6e6a60');
+    rectO(g, 22, 4, 2, 13, '#6e6a60');
+    g.fillStyle = '#c9d5e2'; g.fillRect(5, 6, 14, 7);        // 站牌广告
+    g.fillStyle = P.rug; g.fillRect(6, 7, 5, 2);
+    g.fillStyle = '#8a8578'; g.fillRect(6, 10, 12, 1);
+    return c;
+  }
+
+  function entTlight() { // 红绿灯 12×26
+    const [c, g] = makeCanvas(12, 26);
+    rectO(g, 4, 8, 3, 17, '#6e6a60');
+    rectO(g, 2, 0, 7, 9, '#3a3a38');
+    px(g, 5, 2, '#e05a4a'); px(g, 5, 4, '#e8b23a'); px(g, 5, 6, '#5aae5a');
+    return c;
+  }
+
+  function entConv() { // 便利店 18×24
+    const [c, g] = makeCanvas(18, 24);
+    g.fillStyle = '#e8e2d2'; g.fillRect(1, 2, 16, 21);
+    g.fillStyle = '#3e7c33'; g.fillRect(1, 2, 16, 6);
+    g.fillStyle = P.paper; g.fillRect(4, 4, 10, 2);
+    g.fillStyle = P.glass; g.fillRect(3, 11, 12, 8);
+    g.fillStyle = '#7a95b5'; g.fillRect(4, 13, 10, 4);
+    rectO(g, 7, 20, 5, 3, P.doorWood);
+    return c;
+  }
+
+
   function buildPlayer() {
     const out = {};
     const look = { hair: P.hairBrown, shirt: P.shirtBlue, pants: P.pants };
@@ -462,7 +691,10 @@ window.PixelArt = (function () {
   function buildNpc() {
     // 每个外观 id → 四个方向。以后加人物时在这里补一行外观即可
     const looks = {
-      'npc-painter': { hair: P.hairGrey, shirt: P.shirtCream, pants: '#5c5648', hat: P.beret, palette: true }
+      'npc-painter': { hair: P.hairGrey, shirt: P.shirtCream, pants: '#5c5648', hat: P.beret, palette: true },
+      'npc-student': { hair: '#231f20', shirt: '#e8eef7', pants: '#2b3f66' },
+      'npc-villager': { hair: '#3a332c', shirt: '#c9a15e', pants: '#4a5568', hat: '#d8c27a' },
+      'npc-worker': { hair: '#231f20', shirt: '#e07b39', pants: '#3f4a63', hat: '#f2d13d' }
     };
     const out = {};
     for (const [id, look] of Object.entries(looks)) {
@@ -505,13 +737,19 @@ window.PixelArt = (function () {
         water: [tileWater(0), tileWater(1), tileWater(2)],
         shore: tileShore(),
         roof: tileRoof(), wall: tileWall(), window: tileWindow(), door: tileDoor(),
-        floor: tileFloor(), iwall: tileIWall(), rug: tileRug()
+        floor: tileFloor(), iwall: tileIWall(), rug: tileRug(),
+        asphalt: tileAsphalt(), roadline: tileRoadline(), crosswalk: tileCrosswalk(),
+        brickwall: tileBrickwall(), yard: tileYard(), bridge: tileBridge()
       },
       entities: {
         tree: [entTree(0), entTree(1)],
         bush: entBush(), stone: entStone(), fence: entFence(), lamp: entLamp(),
         sign: entSign(), chest: entChest(), kite: entKite(),
-        bed: entBed(), desk: entDesk(), shelf: entShelf()
+        bed: entBed(), desk: entDesk(), shelf: entShelf(),
+        selfhouse: entSelfhouse(), resident: entResident(), shop: entShop(),
+        store: entStore(), schoolgate: entSchoolGate(), school: entSchool(),
+        office: entOffice(), cw: entCw(), busstop: entBusstop(),
+        tlight: entTlight(), conv: entConv()
       },
       player: buildPlayer(),
       npc: buildNpc(),

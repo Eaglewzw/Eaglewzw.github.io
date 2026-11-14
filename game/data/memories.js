@@ -75,6 +75,24 @@ window.LIFE_DATA.memories = [
     status: 'published',
     isDemo: true
   },
+  {
+    id: 'mem-woods',
+    chapterId: 'demo-village',
+    title: '树林深处的脚印',
+    summary: '幽静密林的一块软泥上，留着一串比手掌还大的野兽脚印。',
+    paragraphs: [
+      '脚印陷进软泥里很深，前后间距拉得很开，像是有大型野兽在深夜匆匆路过，天亮前就离开了。',
+      '（演示文案：这里可以写那天听到了什么声响、为什么没有追上去、后来这片林子又发生了什么。真实回忆请直接替换这段话。）'
+    ],
+    dateLabel: '',
+    people: [],
+    images: [],
+    links: [
+      { label: '博客里的无人机数据集 Drone-10k', url: 'https://eaglewzw.github.io/2025/12/15/Drone-10k/' }
+    ],
+    status: 'published',
+    isDemo: true
+  },
 
   // -------------------------------------------------------------
   //  草稿示例：status 为 draft 的回忆【不会】出现在公开游戏里。

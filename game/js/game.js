@@ -76,15 +76,19 @@
     const def = sceneById(sceneId) || sceneById('village');
     if (!def) { showFallback('场景数据缺失'); return; }
 
-    const legend = DATA.scenes.legend || {};
+    const legend = Object.assign({}, DATA.scenes.legend || {}, def.legend || {});
     const rows = def.map || [];
     const cols = rows[0] ? rows[0].length : 0;
     const W = cols * TILE, H = rows.length * TILE;
 
-    // 1. 地面层（静态，画进离屏画布缓存）
+    // 1. 地面层（静态，画进离屏画布缓存）。
+    //    画布向四周多延伸 PAD_T 格（按边界地块平铺延伸）——
+    //    配合下面的「填满视口」缩放策略，任何窗口尺寸都不会露出黑边
+    const PAD_T = 6;
+    const PAD = PAD_T * TILE;
     const [ground, gg] = (() => {
       const c = document.createElement('canvas');
-      c.width = W; c.height = H;
+      c.width = W + PAD * 2; c.height = H + PAD * 2;
       const g = c.getContext('2d');
       g.imageSmoothingEnabled = false;
       return [c, g];
@@ -95,18 +99,23 @@
     const colliders = [];
     const interactZones = [];
 
-    for (let r = 0; r < rows.length; r++) {
-      const line = rows[r];
-      for (let c0 = 0; c0 < cols; c0++) {
-        const ch = line[c0] || '.';
+    for (let r = -PAD_T; r < rows.length + PAD_T; r++) {
+      for (let c0 = -PAD_T; c0 < cols + PAD_T; c0++) {
+        // 边界外：取该行/列最靠边的地块向外观测平铺（水面/草地自然延续）
+        const sr = Math.min(Math.max(r, 0), rows.length - 1);
+        const sc = Math.min(Math.max(c0, 0), cols - 1);
+        const ch = (rows[sr] || '')[sc] || '.';
         const spec = legend[ch] || legend['.'] || { tile: 'grass' };
         const x = c0 * TILE, y = r * TILE;
-        // 碰撞要先于 water 分支登记 —— 水面必须挡路
-        if (spec.solid) colliders.push({ x: x, y: y, w: TILE, h: TILE });
+        const gx = x + PAD, gy = y + PAD;
+        // 碰撞要先于 water 分支登记 —— 水面必须挡路；
+        // 但延伸区不登记碰撞（玩家被边界墙拦在地图内，延伸只是视觉）
+        const inside = r >= 0 && r < rows.length && c0 >= 0 && c0 < cols;
+        if (inside && spec.solid) colliders.push({ x: x, y: y, w: TILE, h: TILE });
         if (spec.water) { waterCells.push([c0, r]); continue; }
         const img = G.art.tiles[spec.tile];
-        if (img) gg.drawImage(img, x, y);
-        if (spec.entity) {
+        if (img) gg.drawImage(img, gx, gy);
+        if (inside && spec.entity) {
           const ent = makeEntity(spec.entity, c0, r);
           if (ent) {
             entities.push(ent);
@@ -115,6 +124,11 @@
         }
       }
     }
+    // 地图四边的隐形墙：玩家不能走出原始地图范围
+    colliders.push({ x: -2, y: -2, w: W + 4, h: 2 });
+    colliders.push({ x: -2, y: H, w: W + 4, h: 2 });
+    colliders.push({ x: -2, y: -2, w: 2, h: H + 4 });
+    colliders.push({ x: W, y: -2, w: 2, h: H + 4 });
 
     // 2. 人物实体
     const characters = def.characters || [];
@@ -174,6 +188,7 @@
       spawn.y += TILE;
     }
 
+    G.PAD = PAD;
     G.scene = {
       def: def, id: def.id, W: W, H: H,
       ground: ground, waterCells: waterCells,
@@ -206,7 +221,19 @@
       kite:  { img: ents.kite,  w: 16, h: 15, dx: 0,  solid: false },
       bed:   { img: ents.bed,   w: 16, h: 26, dx: 0,  solid: true },
       desk:  { img: ents.desk,  w: 22, h: 16, dx: -3, solid: true },
-      shelf: { img: ents.shelf, w: 16, h: 20, dx: 0,  solid: true }
+      shelf: { img: ents.shelf, w: 16, h: 20, dx: 0,  solid: true },
+      // —— 建筑素材库（村落 / 县城 / 城市内容包）——
+      selfhouse:  { img: ents.selfhouse,  w: 24, h: 28, dx: -4,  solid: true, big: true },
+      resident:   { img: ents.resident,   w: 28, h: 46, dx: -6,  solid: true, big: true },
+      shop:       { img: ents.shop,       w: 26, h: 26, dx: -5,  solid: true, big: true },
+      store:      { img: ents.store,      w: 20, h: 22, dx: -2,  solid: true, big: true },
+      schoolgate: { img: ents.schoolgate, w: 40, h: 16, dx: -12, solid: true, big: true },
+      school:     { img: ents.school,     w: 44, h: 38, dx: -14, solid: true, big: true },
+      office:     { img: ents.office,     w: 36, h: 54, dx: -10, solid: true, big: true },
+      cw:         { img: ents.cw,         w: 22, h: 40, dx: -3,  solid: true, big: true },
+      busstop:    { img: ents.busstop,    w: 26, h: 18, dx: -5,  solid: true },
+      tlight:     { img: ents.tlight,     w: 12, h: 26, dx: -2,  solid: true },
+      conv:       { img: ents.conv,       w: 18, h: 24, dx: -1,  solid: true, big: true }
     }[kind];
     if (!spec) return null;
     const ent = {
@@ -218,8 +245,18 @@
       label: kind
     };
     if (spec.solid) {
-      // 实体碰撞：盖住其所在地块（树干 / 家具等）
-      ent.collider = { x: c0 * TILE + 2, y: r * TILE + 4, w: TILE - 4, h: TILE - 6 };
+      if (spec.big) {
+        // 大型建筑：整个占地区域都是实体（符合俯视角建筑习惯）
+        ent.collider = {
+          x: c0 * TILE + TILE / 2 + spec.dx - spec.w / 2 + 1,
+          y: (r + 1) * TILE - spec.h + 2,
+          w: spec.w - 2,
+          h: spec.h - 4
+        };
+      } else {
+        // 实体碰撞：盖住其所在地块（树干 / 家具等）
+        ent.collider = { x: c0 * TILE + 2, y: r * TILE + 4, w: TILE - 4, h: TILE - 6 };
+      }
     }
     return ent;
   }
@@ -252,9 +289,14 @@
     const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
     canvas.width = Math.floor(cssW * dpr);
     canvas.height = Math.floor(cssH * dpr);
-    // 缩放：保证可视区约 480×300 逻辑像素，且为整数倍保持像素锐利
-    const raw = Math.min(cssW / 480, cssH / 300);
-    viewScale = Math.max(2, Math.min(5, Math.floor(raw) || 2));
+    // 缩放策略：画面铺满整个界面 —— 取能覆盖视口的最小整数倍
+    // （地图×倍率 ≥ 视口），无黑边且保持像素锐利；上限 7 防止过分放大
+    if (G.scene && G.scene.W) {
+      const need = Math.max(cssW / G.scene.W, cssH / G.scene.H);
+      viewScale = Math.max(2, Math.min(7, Math.ceil(need)));
+    } else {
+      viewScale = 3;
+    }
     ctx.imageSmoothingEnabled = false;
   }
 
@@ -355,6 +397,9 @@
     G.camera.x += (tx - G.camera.x) * lerp;
     G.camera.y += (ty - G.camera.y) * lerp;
 
+    // 氛围动画层
+    if (window.LGAmbience) window.LGAmbience.update(dt);
+
     // 自动存档
     G.saveTimer += dt * 1000;
     if (G.saveTimer > SAVE_INTERVAL) { G.saveTimer = 0; queueSave(); }
@@ -385,8 +430,8 @@
     const camX = Math.round(G.camera.x), camY = Math.round(G.camera.y);
     ctx.translate(-camX, -camY);
 
-    // 地面
-    ctx.drawImage(G.scene.ground, 0, 0);
+    // 地面（含四周延伸区）
+    ctx.drawImage(G.scene.ground, -G.PAD, -G.PAD);
 
     // 水面（动画帧）
     const wframes = G.art.tiles.water;
@@ -394,6 +439,9 @@
     for (const [c0, r] of G.scene.waterCells) {
       ctx.drawImage(wframes[(wf + c0 * 3 + r * 7) % wframes.length], c0 * TILE, r * TILE);
     }
+
+    // 氛围层：实体之下（水面涟漪等）
+    if (window.LGAmbience) window.LGAmbience.draw(ctx, 'ground');
 
     // 可见范围内的实体 + 玩家，按 y 排序绘制（遮挡关系）
     const list = [];
@@ -438,6 +486,9 @@
       const bobY = showMarkers ? Math.round(Math.sin(G.time / 0.35 + mx) * 1.5) : 0;
       ctx.drawImage(G.art.marker, Math.round(mx - 4), Math.round(my - 26 + bobY));
     }
+
+    // 氛围层：最上方（飞鸟/蝴蝶/落叶/水花）
+    if (window.LGAmbience) window.LGAmbience.draw(ctx, 'top');
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
@@ -920,19 +971,6 @@
     }
     root.appendChild(toc);
 
-    const links = el('div', 'help-block');
-    links.appendChild(el('h3', 'help-h', '博客直达'));
-    for (const [label, url] of [
-      ['博客主页（作品集）', '/blog-home/'],
-      ['全部文章', '/archives/'],
-      ['分类', '/categories/'],
-      ['关于我', '/about/']
-    ]) {
-      const a = el('a', 'memory-link btn-pixel', label);
-      a.href = url;
-      links.appendChild(a);
-    }
-    root.appendChild(links);
   }
 
   // 面板关闭按钮在 panelHeader() 里动态创建并绑定，这里不再静态绑定。
@@ -1007,7 +1045,6 @@
       queueSave();
       window.GameAudio.open();
     };
-    $('intro-blog').href = '/blog-home/';
   }
 
   // ----------------------------------------------------------
@@ -1117,6 +1154,7 @@
     const savedScene = G.save.sceneId && sceneById(G.save.sceneId) ? G.save.sceneId : 'village';
     loadScene(savedScene, 'default', G.save.sceneId === savedScene ? G.save.pos : null);
 
+    if (window.LGAmbience && window.LGAmbience.init) window.LGAmbience.init();
     resize();
     requestAnimationFrame(frame);
 

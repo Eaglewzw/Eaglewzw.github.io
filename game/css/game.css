@@ -87,40 +87,19 @@ body.game-ready {
   margin-left: 4px;
 }
 
-.game-links {
-  display: flex;
-  gap: 4px;
-  margin-left: auto;
-  align-items: center;
-}
-
-.game-links a {
-  color: #f1e7cb;
-  text-decoration: none;
-  font-size: 13px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.game-links a:hover {
-  background: rgba(241, 231, 203, .16);
-  color: #ffe9b8;
-}
 
 .game-hud {
-  position: absolute;
-  top: 46px; right: 12px;
-  z-index: 30;
   display: flex;
   gap: 6px;
+  margin-left: auto;
+  align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
 .hud-pill {
   position: absolute;
-  top: 46px; left: 12px;
+  top: 58px; left: 12px;
   z-index: 30;
   padding: 4px 10px;
   background: rgba(46, 36, 23, .82);
@@ -684,10 +663,9 @@ body.touch #dialogue { bottom: 150px; }
 @media (max-width: 720px) {
   .game-brand small, .game-hud .btn-pixel span { display: none; }
   .game-hud .btn-pixel { padding: 5px 8px; font-size: 15px; }
-  .game-links a { font-size: 12px; padding: 3px 6px; }
-  .game-hud { top: 46px; right: 8px; flex-wrap: nowrap; }
+  .game-hud { flex-wrap: nowrap; }
   .hud-pill {
-    top: 88px;
+    top: 58px;
     left: 8px;
     max-width: 60vw;
     overflow: hidden;

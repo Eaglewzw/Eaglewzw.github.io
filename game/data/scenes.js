@@ -35,8 +35,10 @@ window.LIFE_DATA.scenes = {
   // -------------------------------------------------------------
   //  村庄（室外）：小屋 + 河岸 + 树林 + 田地 + 通向人生地图的路
   //  地图为艺术化示意，不代表真实村庄布局。
-  //  地图宽 31 格 × 高 22 格（每格 16px → 496×352 逻辑像素）。
-  //  右侧 s~~~~~~ 为河岸与河水；中上 RRR/WOWDOWW 是小屋立面。
+  //  地图宽 40 格 × 高 26 格（每格 16px → 640×416 逻辑像素）。
+  //  右侧蜿蜒的 s~~~~~ 为河岸与河水（河心还有一座小花岛）；
+  //  中上 RRR/WOWDOWW 是小屋立面；西北密林里藏着木箱和一条
+  //  通向「树林深处」的林间小路。
   // -------------------------------------------------------------
   village: {
     id: 'village',
@@ -44,51 +46,61 @@ window.LIFE_DATA.scenes = {
     indoor: false,
 
     map: [
-      'T.T.T.T..T...T..T.......s~~~~~~',
-      '..T..T..T.....,.....,...s~~~~~~',
-      '...T..T..T..............s~~~~~~',
-      '.T..C..T....T...........s~~~~~~',
-      '.T......T..T.....,......s~~~~~~',
-      '..T..T....T....T........s~~~~~~',
-      '...T.....B......T.......s~~~~~~',
-      '.........RRRRRRR........s~~~~~~',
-      '.........RRRRRRR........s~~~~~~',
-      '.........RRRRRRR........s~~~~~~',
-      '.........WOWDOWW........s~~~~~~',
-      '........L...p..,........s~~~~~~',
-      '............p.S..o......s~~~~~~',
-      '............ppppppppppppp~~~~~~',
-      '............p....,...N..s~~~~~~',
-      '............p..ff.fff...s~~~~~~',
-      '............p..f####f..Ks~~~~~~',
-      '............p..f####f...s~~~~~~',
-      '............p..ffffff...s~~~~~~',
-      '............p.B....,....s~~~~~~',
-      '............X....o......s~~~~~~',
-      '...T........X......T....s~~~~~~'
+      'T.TT.TT.TT.T.................T....s~~~~~',
+      '.pS.TT.T.TT.T..............T......s~~~~~',
+      'Tpp.C.T.T.TT......,...T...........s~~~~~',
+      '.TpTT.TT.T.TT......T........,..T...s~~~~',
+      'T.p.TT.T..T.T........,..T.........,s~~~~',
+      '.TpppT.TT.TT.......................s~~~~',
+      'T.T.p.T.T.T.TRRRRRRR.....,.........s~~~~',
+      '.T.TpT.T.T.T.RRRRRRR.To...........s~~~~~',
+      'T.T.ppp.TT..TRRRRRRR......T.......s~~~~~',
+      '..BTT.pT.TB..WOWDOWW..............s~.,~~',
+      'T.T..Tpp..TTB...p...,B..........,Ts~,.~~',
+      '.TBT.T..pT.TT,L.p.S..o.....B......s~~~~~',
+      'T.TT..T.p.T.B...pT....,...,...,..s~~~~~~',
+      '..T....Bpppppppppppppppppppppppp.s~~~~~~',
+      '....,T....,....,p..,.....o.,..N..s~~~~~~',
+      '.....ffffffff...po..........o...,s~~~~~~',
+      'T....f######f,..p.,.....,.......s~~~~~~~',
+      '.....f######f...p.............K.s~~~~~~~',
+      '.....f######f...X...,...........s~~~~~~~',
+      '.....ffffffff...X.......B.......s~~~~~~~',
+      '.....B..,.......X.............,..s~~~~~~',
+      '.T.........o.,..X.........T.o....s~~~~~~',
+      '.......,.T....B.X....T.....B.,...s~~~~~~',
+      '............T...X............T....s~~~~~',
+      '....T...........X................,s~~~~~',
+      '................X.................s~~~~~'
     ],
 
     spawnPoints: {
-      'default':       [12, 13],  // 村口岔路
-      'from-cottage':  [12, 11]   // 从小屋出来，站在门前
+      'default':        [16, 12],  // 村口岔路（门前小路中段）
+      'from-cottage':   [16, 10],  // 从小屋出来，站在门前
+      'from-deepwoods': [2, 3]     // 从树林深处回来，站在林间小路上
     },
 
     characters: [
-      { id: 'painter-demo', at: [22, 14] }
+      { id: 'painter-demo', at: [30, 14] }
     ],
 
     interactables: [
-      { id: 'sign-village',  type: 'dialogue',  at: [14, 12], hint: '村口木牌', dialogueId: 'dlg-sign' },
-      { id: 'kite-bank',     type: 'memory',    at: [23, 16], hint: '河边的风筝', dialogueId: 'dlg-kite', memoryId: 'mem-kite', isDemo: true },
-      { id: 'chest-woods',   type: 'memory',    at: [4, 3],   hint: '林中的旧木箱', dialogueId: 'dlg-chest', memoryId: 'mem-chest', isDemo: true },
-      { id: 'road-faraway',  type: 'chapterMap', at: [12, 20], hint: '远方的路' },
-      { id: 'door-cottage',  type: 'scene',     at: [12, 10], hint: '推开木门', toScene: 'cottage', spawn: 'default' }
+      { id: 'sign-village',   type: 'dialogue',  at: [18, 11], hint: '村口木牌', dialogueId: 'dlg-sign' },
+      { id: 'kite-bank',      type: 'memory',    at: [30, 17], hint: '河边的风筝', dialogueId: 'dlg-kite', memoryId: 'mem-kite', isDemo: true },
+      { id: 'chest-woods',    type: 'memory',    at: [4, 2],   hint: '林中的旧木箱', dialogueId: 'dlg-chest', memoryId: 'mem-chest', isDemo: true },
+      { id: 'road-faraway',   type: 'chapterMap', at: [16, 20], hint: '远方的路' },
+      { id: 'door-cottage',   type: 'scene',     at: [16, 9],  hint: '推开木门', toScene: 'cottage', spawn: 'default' },
+      { id: 'sign-woods',     type: 'dialogue',  at: [2, 1],   hint: '林间木牌', dialogueId: 'dlg-woodspath' },
+      { id: 'path-deepwoods', type: 'scene',     at: [1, 1],   hint: '林间小路', toScene: 'deepwoods', spawn: 'default' },
+      { id: 'tree-lao-huai',  type: 'memory',    at: [17, 12], hint: '村口的老槐树', dialogueId: 'dlg-lao-huai', memoryId: 'mem-lao-huai', isDemo: true },
+      { id: 'night-yard',     type: 'memory',    at: [8, 14],  hint: '夏夜的晒谷场', dialogueId: 'dlg-summer-yard', memoryId: 'mem-summer-yard', isDemo: true },
+      { id: 'school-road',    type: 'memory',    at: [24, 14], hint: '上学的土路', dialogueId: 'dlg-school-road', memoryId: 'mem-school-road', isDemo: true }
     ]
   },
 
   // -------------------------------------------------------------
-  //  小屋（室内）：书桌（打开真实博客文章）、木床、书架
-  //  地图宽 14 格 × 高 11 格。
+  //  小屋（室内）：书桌（打开真实博客文章）、木床、书架、两块地毯
+  //  地图宽 26 格 × 高 16 格。
   // -------------------------------------------------------------
   cottage: {
     id: 'cottage',
@@ -96,31 +108,84 @@ window.LIFE_DATA.scenes = {
     indoor: true,
 
     map: [
-      'UUUUUUUUUUUUUU',
-      'U____________U',
-      'U_h__________U',
-      'U____________U',
-      'U__rrrr______U',
-      'U__rrrr____k_U',
-      'U__rrrr______U',
-      'U____________U',
-      'U_b__________U',
-      'U____________U',
-      'UUUUUUUdUUUUUU'
+      'UUUUUUUUUUUUUUUUUUUUUUUUUU',
+      'U________________________U',
+      'U_h______________________U',
+      'U________________________U',
+      'U____rrrrrr___rrrr_______U',
+      'U____rrrrrr___rrrr_______U',
+      'U____rrrrrr___________k__U',
+      'U________________________U',
+      'U________________________U',
+      'U________________________U',
+      'U________________________U',
+      'U_b______________________U',
+      'U________________________U',
+      'U________________________U',
+      'U________________________U',
+      'UUUUUUUUUUUUUUdUUUUUUUUUUU'
     ],
 
     spawnPoints: {
-      'default': [7, 8]   // 进门后站的位置
+      'default': [14, 13]   // 进门后站的位置
     },
 
     characters: [],
 
     interactables: [
-      { id: 'door-village', type: 'scene',    at: [7, 10],  hint: '走出小屋', toScene: 'village', spawn: 'from-cottage' },
-      { id: 'desk-notes',   type: 'link',     at: [11, 5],  hint: '书桌上的笔记', dialogueId: 'dlg-desk',
+      { id: 'door-village', type: 'scene',    at: [14, 15], hint: '走出小屋', toScene: 'village', spawn: 'from-cottage' },
+      { id: 'desk-notes',   type: 'link',     at: [22, 6],  hint: '书桌上的笔记', dialogueId: 'dlg-desk',
         url: 'https://eaglewzw.github.io/2026/04/22/GD-Net/', linkLabel: '打开博客文章《GD-Net》' },
-      { id: 'bed-rest',     type: 'dialogue', at: [2, 8],   hint: '旧木床', dialogueId: 'dlg-bed' },
+      { id: 'bed-rest',     type: 'dialogue', at: [2, 11],  hint: '旧木床', dialogueId: 'dlg-bed' },
       { id: 'shelf-books',  type: 'dialogue', at: [2, 2],   hint: '矮书架', dialogueId: 'dlg-shelf' }
+    ]
+  },
+
+  // -------------------------------------------------------------
+  //  树林深处（室外）：村庄西北密林更深处的演示场景。
+  //  地图宽 30 格 × 高 20 格。大量树木 + 一条蜿蜒小径，氛围幽静。
+  //  里面只有演示互动（刻字的老树、老井、野兽的足迹），以及
+  //  南边出口原路返回村庄。
+  // -------------------------------------------------------------
+  deepwoods: {
+    id: 'deepwoods',
+    name: '示例村庄 · 树林深处',
+    indoor: false,
+
+    map: [
+      'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+      'TTTT.,...,TTTTTTTTTTTTTTTTTTTT',
+      'TTTT..T...TTTTTTTTTTTTTTTTTTTT',
+      'TTTT..p.o.TTTTTTTTTTTTTTTTTTTT',
+      'TTTT..p,..TTTTTTTTTTTTTTTTTTTT',
+      'TTTTT,pTTTTTTTTTTTTTTTTTTTTTTT',
+      'TTTTTTpppTTTTTTTTTTTTTTTTTTTTT',
+      'TTTTTTTBpTTTTTTTTTTTTTTTTTTTTT',
+      'TTTTTTTTpTTTTTTT,TB.....TTTTTT',
+      'TTTTTTTopppppppppppp.oo.TTTTTT',
+      'TTTTTTTTT,TT#pTTTTT.,.,.TTTTTT',
+      'TTTTTTTTTTTT#pTTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTBTpppTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTp,TTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTT,pTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTpoTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTpTTTTTTTTTTTTTT'
+    ],
+
+    spawnPoints: {
+      'default': [15, 16]   // 从村庄走进来，站在这条蜿蜒小径上
+    },
+
+    characters: [],
+
+    interactables: [
+      { id: 'trail-village',     type: 'scene',    at: [15, 19], hint: '回到村庄', toScene: 'village', spawn: 'from-deepwoods' },
+      { id: 'oldtree-deepwoods', type: 'dialogue', at: [6, 5],   hint: '刻字的老树', dialogueId: 'dlg-oldtree', isDemo: true },
+      { id: 'well-deepwoods',    type: 'dialogue', at: [21, 12], hint: '一口老井', dialogueId: 'dlg-well', isDemo: true },
+      { id: 'traces-deepwoods',  type: 'memory',   at: [12, 13], hint: '野兽的足迹', dialogueId: 'dlg-traces', memoryId: 'mem-woods', isDemo: true }
     ]
   },
 

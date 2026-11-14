@@ -41,64 +41,64 @@ window.LIFE_DATA.chapters = [
     id: 'ch-01-xiahuyuan',
     title: '下湖源村的童年',
     period: '',
-    description: '',
-    status: 'comingSoon',
-    sceneId: ''
+    description: '村里的小屋、河岸、树林深处都已开放。四处走走，发现属于村口的童年记忆——占位故事已就位，等待替换为真实回忆。',
+    status: 'available',
+    sceneId: 'village',
   },
   {
     id: 'ch-02-county',
     title: '五年级之后来到县城',
     period: '',
-    description: '',
-    status: 'comingSoon',
-    sceneId: ''
+    description: '县城的十字街口：连排店铺、公交站与学校。占位故事已就位，等待替换为真实回忆。',
+    status: 'available',
+    sceneId: 'county',
   },
   {
     id: 'ch-03-teacher-male',
     title: '一位男老师的鼓励',
     period: '',
-    description: '',
-    status: 'comingSoon',
-    sceneId: ''
+    description: '卷子页边的那行红字。故事占位已就位，场景在县城学校。',
+    status: 'available',
+    sceneId: 'county',
   },
   {
     id: 'ch-04-junior-high',
     title: '初中三年',
     period: '',
-    description: '',
-    status: 'comingSoon',
-    sceneId: ''
+    description: '晚自习亮起来的那排窗。故事占位已就位，场景在县城学校。',
+    status: 'available',
+    sceneId: 'county',
   },
   {
     id: 'ch-05-teacher-female',
     title: '一位女老师的支持与中考',
     period: '',
-    description: '',
-    status: 'comingSoon',
-    sceneId: ''
+    description: '中考前的报名表与那句「最后那一场才算数」。故事占位已就位。',
+    status: 'available',
+    sceneId: 'county',
   },
   {
     id: 'ch-06-high-school',
     title: '高中生活',
     period: '',
-    description: '',
-    status: 'comingSoon',
-    sceneId: ''
+    description: '高中部的晚自习与倒计时牌。故事占位已就位，场景在县城学校高中部。',
+    status: 'available',
+    sceneId: 'county',
   },
   {
     id: 'ch-07-later',
     title: '后来的经历',
     period: '',
-    description: '',
-    status: 'comingSoon',
-    sceneId: ''
+    description: '初到深圳的站台与出租屋的窗。占位故事已就位，场景在深圳。',
+    status: 'available',
+    sceneId: 'shenzhen',
   },
   {
     id: 'ch-08-shenzhen',
     title: '在深圳工作',
     period: '',
-    description: '',
-    status: 'comingSoon',
-    sceneId: ''
+    description: '科技园的写字楼与城中村的巷口之间。占位故事已就位，场景在深圳。',
+    status: 'available',
+    sceneId: 'shenzhen',
   }
 ];

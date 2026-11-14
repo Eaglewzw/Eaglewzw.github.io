@@ -16,20 +16,14 @@
 
   <header class="game-topbar">
     <div class="game-brand">🌱 Verser_Vv<small>人生探索</small></div>
-    <nav class="game-links" aria-label="博客导航">
-      <a href="/blog-home/">博客主页</a>
-      <a href="/archives/">全部文章</a>
-      <a href="/about/">关于我</a>
-    </nav>
+    <div class="game-hud">
+      <button id="btn-map"    class="btn-pixel" aria-label="打开人生地图">🗺<span>人生地图</span></button>
+      <button id="btn-book"   class="btn-pixel" aria-label="打开回忆手册">📖<span>回忆手册</span><em id="book-badge" hidden></em></button>
+      <button id="btn-help"   class="btn-pixel" aria-label="帮助与文字目录">❓<span>帮助</span></button>
+      <button id="btn-settings" class="btn-pixel" aria-label="设置">⚙<span>设置</span></button>
+      <button id="btn-sound"  class="btn-pixel" aria-label="音效开关">🔊</button>
+    </div>
   </header>
-
-  <div class="game-hud">
-    <button id="btn-map"    class="btn-pixel" aria-label="打开人生地图">🗺<span>人生地图</span></button>
-    <button id="btn-book"   class="btn-pixel" aria-label="打开回忆手册">📖<span>回忆手册</span><em id="book-badge" hidden></em></button>
-    <button id="btn-help"   class="btn-pixel" aria-label="帮助与文字目录">❓<span>帮助</span></button>
-    <button id="btn-settings" class="btn-pixel" aria-label="设置">⚙<span>设置</span></button>
-    <button id="btn-sound"  class="btn-pixel" aria-label="音效开关">🔊</button>
-  </div>
 
   <div id="hud-location" class="hud-pill">正在载入…</div>
 
@@ -65,7 +59,6 @@
       <p class="intro-demo-note">⚠ 本场景为功能演示：地图是艺术化示意，人物与事件均已标注「演示」，不是我的真实经历。</p>
       <div class="intro-actions">
         <button class="btn-pixel btn-primary" id="intro-start">开始探索</button>
-        <a class="btn-pixel" id="intro-blog" href="/blog-home/">直接浏览博客</a>
       </div>
     </div>
   </div>
@@ -99,17 +92,17 @@
   <h2>文字版人生目录</h2>
   <ol>
     <li>示例场景 · 村口的午后<span class="fb-badge">演示 · 可探索</span></li>
-    <li>下湖源村的童年<span class="fb-badge">故事待续</span></li>
-    <li>五年级之后来到县城<span class="fb-badge">故事待续</span></li>
-    <li>一位男老师的鼓励<span class="fb-badge">故事待续</span></li>
-    <li>初中三年<span class="fb-badge">故事待续</span></li>
-    <li>一位女老师的支持与中考<span class="fb-badge">故事待续</span></li>
-    <li>高中生活<span class="fb-badge">故事待续</span></li>
-    <li>后来的经历<span class="fb-badge">故事待续</span></li>
-    <li>在深圳工作<span class="fb-badge">故事待续</span></li>
+    <li>下湖源村的童年<span class="fb-badge">可探索 · 占位故事</span></li>
+    <li>五年级之后来到县城<span class="fb-badge">可探索 · 占位故事</span></li>
+    <li>一位男老师的鼓励<span class="fb-badge">可探索 · 占位故事</span></li>
+    <li>初中三年<span class="fb-badge">可探索 · 占位故事</span></li>
+    <li>一位女老师的支持与中考<span class="fb-badge">可探索 · 占位故事</span></li>
+    <li>高中生活<span class="fb-badge">可探索 · 占位故事</span></li>
+    <li>后来的经历<span class="fb-badge">可探索 · 占位故事</span></li>
+    <li>在深圳工作<span class="fb-badge">可探索 · 占位故事</span></li>
   </ol>
 
-  <p class="fb-demo-note">说明：示例场景仅用于演示玩法，地图为艺术化示意，人物与事件均为功能演示，不是我的真实经历。尚未写好的章节统一标记为「故事待续」。</p>
+  <p class="fb-demo-note">说明：示例场景仅用于演示玩法，地图为艺术化示意，人物与事件均为功能演示，不是我的真实经历。各章节场景已开放，正文为占位故事，等待替换为真实回忆。</p>
 
   <p class="fb-foot">由 Hexo 驱动 · 游戏与素材均为原创 · 进度仅保存在你自己的浏览器里</p>
 </section>
@@ -119,7 +112,11 @@
 <script src="/game/data/characters.js"></script>
 <script src="/game/data/dialogues.js"></script>
 <script src="/game/data/memories.js"></script>
+<script src="/game/data/pack-village.js"></script>
+<script src="/game/data/pack-county.js"></script>
+<script src="/game/data/pack-city.js"></script>
 <script src="/game/js/sprites.js"></script>
+<script src="/game/js/ambience.js"></script>
 <script src="/game/js/audio.js"></script>
 <script src="/game/js/save.js"></script>
 <script src="/game/js/game.js"></script>
