@@ -64,6 +64,20 @@
   function chapterOf(memory) {
     return (DATA.chapters || []).find(function (c) { return c.id === memory.chapterId; }) || null;
   }
+  // 章节进度：本章已发现 / 全部回忆数
+  function chapterProgress(ch) {
+    const mems = publishedMemories.filter(function (m) { return m.chapterId === ch.id; });
+    const found = mems.filter(function (m) { return G.discovered.has(m.id); }).length;
+    return { total: mems.length, found: found, complete: found === mems.length };
+  }
+  // 顺序解锁：章节按时间顺序排列，第一章默认解锁；
+  // 之后每一章需要收集上一章的全部回忆才点亮（无回忆的章节自动放行）
+  function chapterUnlocked(chapters, idx) {
+    if (idx <= 0) return true;
+    const prev = chapters[idx - 1];
+    if (!prev) return true;
+    return chapterProgress(prev).complete;
+  }
   function dialogueById(id) {
     if (!id) return null;
     return (DATA.dialogues && DATA.dialogues[id]) || null;
@@ -700,6 +714,20 @@
     updateBookBadge();
     window.GameAudio.chime();
     toast('已收录到回忆手册：《' + (mem.title || id) + '》');
+    // 章节完成检查：本章回忆全部集齐 → 下一章解锁
+    const ch = chapterOf(mem);
+    if (ch) {
+      const prog = chapterProgress(ch);
+      if (prog.total > 0 && prog.complete) {
+        const chapters = DATA.chapters || [];
+        const next = chapters[chapters.indexOf(ch) + 1];
+        setTimeout(function () {
+          toast(next ? '「' + ch.title + '」完成 —— 新章节「' + next.title + '」已解锁'
+                     : '「' + ch.title + '」完成！');
+          window.GameAudio.chime();
+        }, 900);
+      }
+    }
     queueSave();
   }
 
@@ -744,33 +772,55 @@
   // —— 人生地图 ——
   function buildMapPanel(root) {
     root.appendChild(panelHeader('人生地图'));
-    const note = el('p', 'panel-note', '章节按时间顺序排列。标着「故事待续」的章节还没有写下正文，等主人整理好就会点亮。');
+    const note = el('p', 'panel-note',
+      '人生是一段一段走过的：收集当前章节的全部回忆，下一段旅程就会解锁。');
     root.appendChild(note);
 
-    for (const ch of (DATA.chapters || [])) {
-      const card = el('div', 'chapter-card' + (ch.status === 'available' ? ' chapter-open' : ' chapter-locked'));
+    const chapters = DATA.chapters || [];
+    let prevUnlocked = true;
+    for (let i = 0; i < chapters.length; i++) {
+      const ch = chapters[i];
+      const prog = chapterProgress(ch);
+      const unlocked = chapterUnlocked(chapters, i);
+      const completed = unlocked && prog.complete && prog.total > 0;
+
+      const card = el('div', 'chapter-card ' +
+        (unlocked ? 'chapter-open' : 'chapter-locked'));
       const top = el('div', 'chapter-top');
-      const title = el('h3', 'chapter-title', ch.title || '未命名章节');
+      const title = el('h3', 'chapter-title',
+        (unlocked ? '' : '🔒 ') + (ch.title || '未命名章节'));
       top.appendChild(title);
       const badges = el('span', 'chapter-badges');
       if (ch.isDemo) badges.appendChild(el('em', 'badge badge-demo', '演示'));
-      badges.appendChild(el('em', 'badge ' + (ch.status === 'available' ? 'badge-open' : 'badge-soon'),
-        ch.status === 'available' ? '可探索' : '故事待续'));
+      badges.appendChild(el('em',
+        'badge ' + (completed ? 'badge-done' : unlocked ? 'badge-open' : 'badge-lock'),
+        completed ? '已完成' : unlocked ? '可探索' : '待解锁'));
       top.appendChild(badges);
       card.appendChild(top);
 
       if (ch.period) card.appendChild(el('p', 'chapter-period', ch.period));
       if (ch.description) card.appendChild(el('p', 'chapter-desc', ch.description));
-      else if (ch.status !== 'available') card.appendChild(el('p', 'chapter-desc chapter-desc-empty', '这一章的故事还没有写下。'));
 
-      if (ch.status === 'available' && ch.sceneId && sceneById(ch.sceneId)) {
-        const btn = el('button', 'btn-pixel btn-primary', '进入这个场景');
+      if (unlocked && prog.total > 0) {
+        const progLine = el('p', 'chapter-progress-line',
+          '本章回忆 ' + prog.found + ' / ' + prog.total +
+          (prog.complete ? ' · 已集齐 ✓' : ''));
+        card.appendChild(progLine);
+      } else if (!unlocked) {
+        const prev = chapters[i - 1];
+        card.appendChild(el('p', 'chapter-desc chapter-desc-empty',
+          '收集「' + (prev ? prev.title : '上一章') + '」的全部回忆后解锁。'));
+      }
+
+      if (unlocked && ch.sceneId && sceneById(ch.sceneId)) {
+        const btn = el('button', 'btn-pixel btn-primary',
+          completed ? '重访这个场景' : '进入这个场景');
         btn.addEventListener('click', function () {
           closePanel();
           switchScene(ch.sceneId, 'default');
         });
         card.appendChild(btn);
-      } else if (ch.status === 'available') {
+      } else if (unlocked) {
         card.appendChild(el('p', 'chapter-desc chapter-desc-empty', '（这个章节还没有绑定场景。）'));
       }
       root.appendChild(card);

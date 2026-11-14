@@ -163,6 +163,7 @@ body.game-ready {
   gap: 6px;
 }
 
+.game-hud .btn-pixel em#book-badge[hidden] { display: none; }
 .game-hud .btn-pixel em#book-badge {
   display: inline-block;
   min-width: 16px;
