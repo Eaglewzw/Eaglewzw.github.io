@@ -72,7 +72,62 @@
   }
   // 顺序解锁：章节按时间顺序排列，第一章默认解锁；
   // 之后每一章需要收集上一章的全部回忆才点亮（无回忆的章节自动放行）
+  // —— NPC 生活行为：出生点附近漫游，靠近玩家时停下看人 ——
+  function npcBlocked(e, x, y) {
+    const fx = x - 5, fy = y - 6, fw = 10, fh = 6;
+    for (const c of G.scene.colliders) {
+      if (c === e.collider) continue; // 豁免自身
+      if (fx < c.x + c.w && fx + fw > c.x && fy < c.y + c.h && fy + fh > c.y) return true;
+    }
+    return false;
+  }
+  function updateNpc(e, dt) {
+    if (G.mode !== 'explore') { e.walking = false; return; }
+    const dxp = G.player.x - e.x;
+    const dyp = (G.player.y - 8) - (e.baseline - 8);
+    if (Math.hypot(dxp, dyp) < 70) {
+      // 玩家靠近：停下、转身看人
+      e.walking = false;
+      e.faceDir = Math.abs(dxp) > Math.abs(dyp) ? (dxp > 0 ? 'right' : 'left') : (dyp > 0 ? 'down' : 'up');
+      return;
+    }
+    if (reducedMotion()) return;
+
+    e.wanderT -= dt;
+    if (e.wanderT <= 0 && !e.walking) {
+      e.wanderT = 2.5 + Math.random() * 3.5;
+      if (Math.random() < 0.45) {
+        // 40% 概率走向出生点附近的一个随机可达点
+        for (let t = 0; t < 8; t++) {
+          const ang = Math.random() * Math.PI * 2;
+          const r = 10 + Math.random() * TILE * 1.6;
+          const tx = e.homeX + Math.cos(ang) * r;
+          const ty = e.homeY + Math.sin(ang) * r;
+          if (!npcBlocked(e, tx, ty)) { e.tx = tx; e.ty = ty; e.walking = true; break; }
+        }
+      }
+    }
+    if (e.walking) {
+      const spd = 20 * dt;
+      const dx = e.tx - e.x, dy = e.ty - e.baseline;
+      const d = Math.hypot(dx, dy);
+      if (d < 1.5) { e.walking = false; }
+      else {
+        const vx = dx / d * spd, vy = dy / d * spd;
+        if (!npcBlocked(e, e.x + vx, e.baseline)) e.x += vx; else e.walking = false;
+        if (!npcBlocked(e, e.x, e.baseline + vy)) e.baseline += vy; else e.walking = false;
+        if (Math.abs(dx) > Math.abs(dy)) e.faceDir = dx > 0 ? 'right' : 'left';
+        else e.faceDir = dy > 0 ? 'down' : 'up';
+      }
+    }
+    // 碰撞体跟随 NPC 移动
+    e.collider.x = e.x - TILE / 2 + 2;
+    e.collider.y = e.baseline - TILE + 4;
+  }
+
   function chapterUnlocked(chapters, idx) {
+    // freeRoam（浏览模式）：全部开放
+    if (DATA.config && DATA.config.freeRoam) return true;
     if (idx <= 0) return true;
     const prev = chapters[idx - 1];
     if (!prev) return true;
@@ -155,12 +210,15 @@
         kind: 'npc', sprite: sprite, x: px0 + TILE / 2, baseline: py0 + TILE,
         drawW: 16, drawH: 20, dir: 'down', bobSeed: (conf.at[0] * 7 + conf.at[1] * 13) % 10,
         label: cd.name, isDemo: !!cd.isDemo, npcId: cd.id,
-        faceDir: 'down', facing: null
+        faceDir: 'down', facing: null,
+        // —— 生活行为：出生点漫游 ——
+        homeX: px0 + TILE / 2, homeY: py0 + TILE,
+        wanderT: 1.5 + Math.random() * 3, walking: false, tx: 0, ty: 0
       };
       ent.collider = { x: px0 + 2, y: py0 + 4, w: TILE - 4, h: TILE - 6 };
       colliders.push(ent.collider);
       entities.push(ent);
-      // 人物自带对话交互
+      // 人物自带对话互动
       interactZones.push({
         id: 'npc-' + cd.id, kind: 'npc', ent: ent,
         cx: px0 + TILE / 2, cy: py0 + TILE / 2,
@@ -411,8 +469,16 @@
     G.camera.x += (tx - G.camera.x) * lerp;
     G.camera.y += (ty - G.camera.y) * lerp;
 
-    // 氛围动画层
+    // NPC 生活行为（漫游 / 靠近看人；对话与面板打开时冻结）
+    if (G.scene && G.scene.entities) {
+      for (const e of G.scene.entities) {
+        if (e.kind === 'npc') updateNpc(e, dt);
+      }
+    }
+
+    // 氛围动画层 + 生活细节层
     if (window.LGAmbience) window.LGAmbience.update(dt);
+    if (window.LGDetails) window.LGDetails.update(dt);
 
     // 自动存档
     G.saveTimer += dt * 1000;
@@ -453,6 +519,9 @@
     for (const [c0, r] of G.scene.waterCells) {
       ctx.drawImage(wframes[(wf + c0 * 3 + r * 7) % wframes.length], c0 * TILE, r * TILE);
     }
+
+    // 生活细节层：静态杂物（实体之下）
+    if (window.LGDetails) window.LGDetails.draw(ctx, 'ground');
 
     // 氛围层：实体之下（水面涟漪等）
     if (window.LGAmbience) window.LGAmbience.draw(ctx, 'ground');
@@ -503,6 +572,9 @@
 
     // 氛围层：最上方（飞鸟/蝴蝶/落叶/水花）
     if (window.LGAmbience) window.LGAmbience.draw(ctx, 'top');
+
+    // 生活细节层：上升物（炊烟等）
+    if (window.LGDetails) window.LGDetails.draw(ctx, 'top');
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
@@ -1205,6 +1277,7 @@
     loadScene(savedScene, 'default', G.save.sceneId === savedScene ? G.save.pos : null);
 
     if (window.LGAmbience && window.LGAmbience.init) window.LGAmbience.init();
+    if (window.LGDetails && window.LGDetails.init) window.LGDetails.init();
     resize();
     requestAnimationFrame(frame);
 
