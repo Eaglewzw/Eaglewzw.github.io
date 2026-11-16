@@ -41,7 +41,8 @@
     interactTarget: null,
     save: window.GameSave.load(),
     dialogue: null,       // {nodes, index, typing, timer, done}
-    time: 0,
+    time: window.GameSave.load().worldTime || 0,
+    villageWorld: null,
     lastFrame: 0,
     saveTimer: 0,
     settings: window.GameSave.load().settings,
@@ -73,25 +74,91 @@
   // 顺序解锁：章节按时间顺序排列，第一章默认解锁；
   // 之后每一章需要收集上一章的全部回忆才点亮（无回忆的章节自动放行）
   // —— NPC 生活行为：出生点附近漫游，靠近玩家时停下看人 ——
-  function npcBlocked(e, x, y) {
+  function npcBlocked(e, x, y, scene) {
+    scene = scene || G.scene;
     const fx = x - 5, fy = y - 6, fw = 10, fh = 6;
-    for (const c of G.scene.colliders) {
+    for (const c of scene.colliders) {
       if (c === e.collider) continue; // 豁免自身
       if (fx < c.x + c.w && fx + fw > c.x && fy < c.y + c.h && fy + fh > c.y) return true;
     }
     return false;
   }
+  // Breadth-first routes use the same static collision geometry as walking.
+  function npcRoute(e, target, scene) {
+    scene = scene || G.villageWorld || G.scene;
+    const cols = scene.W / TILE, rows = scene.H / TILE;
+    const sx = Math.floor(e.x / TILE), sy = Math.floor((e.baseline - 1) / TILE);
+    const goal = target[1] * cols + target[0], start = sy * cols + sx;
+    const previous = new Map([[start, null]]), queue = [start];
+    const walkable = scene.walkable;
+    for (let i=0; i<queue.length; i++) {
+      const cell=queue[i];
+      if (cell===goal) break;
+      const x=cell%cols, y=Math.floor(cell/cols);
+      for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx=x+dx, ny=y+dy, next=ny*cols+nx;
+        if(nx<0 || ny<0 || nx>=cols || ny>=rows || previous.has(next) || !walkable[next]) continue;
+        previous.set(next,cell); queue.push(next);
+      }
+    }
+    if (!previous.has(goal)) return [];
+    const path=[];
+    for(let cell=goal; cell!==start; cell=previous.get(cell)) path.push({x:cell%cols*TILE+8,y:Math.floor(cell/cols)*TILE+12});
+    path.push({x:sx*TILE+8,y:sy*TILE+12});
+    return path.reverse();
+  }
+  function syncResidents() {
+    if(!G.villageWorld || !G.scene) return;
+    const residents=G.villageWorld.entities.filter(e=>e.route);
+    for(const e of residents) e.hidden=!!e.inside;
+    for(const e of G.scene.entities) if(e.homeProjection) {
+      const resident=residents.find(r=>r.npcId===e.npcId);
+      e.hidden=!(resident && resident.inside && resident.homeScene===G.scene.id);
+    }
+  }
+  function updateResident(e, dt) {
+    const night = window.LGLandscape && window.LGLandscape.nightAmount(G) > .65;
+    if (e.night !== night) { e.night=night; e.path=[]; e.wanderT=0; e.arrivedHome=false;
+      if (!night) e.inside=false; }
+    if (night && e.inside) { e.walking=false; return; }
+    if (reducedMotion()) {
+      if (night) { e.x=e.nightHome[0]*TILE+8; e.baseline=e.nightHome[1]*TILE+12; e.inside=true; e.arrivedHome=true; }
+      return;
+    }
+    if (e.wanderT>0) { e.wanderT-=dt; e.walking=false; return; }
+    if (!e.path || !e.path.length) {
+      const destination=night ? e.nightHome : e.route[e.routeIndex++ % e.route.length];
+      e.path=npcRoute(e,destination);
+      if (!e.path.length) { e.wanderT=1.5; return; }
+    }
+    const next=e.path[0], dx=next.x-e.x, dy=next.y-e.baseline, distance=Math.hypot(dx,dy);
+    if(distance<.7) {
+      e.path.shift(); e.walking=false;
+      if(!e.path.length) { e.wanderT=2+e.bobSeed*.35; if(night) { e.arrivedHome=true; e.inside=true; } }
+      return;
+    }
+    const step=Math.min(distance,(e.speed||18)*dt);
+    const nx=e.x+dx/distance*step, ny=e.baseline+dy/distance*step;
+    // Residents are passable, so narrow village paths never become bottlenecks.
+    if (!npcBlocked(e,nx,ny,G.villageWorld)) {
+      e.x=nx; e.baseline=ny; e.walking=true;
+      e.faceDir=Math.abs(dx)>Math.abs(dy) ? (dx>0?'right':'left') : (dy>0?'down':'up');
+    } else { e.path=[]; e.wanderT=1; e.walking=false; }
+  }
   function updateNpc(e, dt) {
+    if (e.hidden || e.route) return;
+    if (e.homeProjection) { e.walking=false; e.faceDir=faceTowards(e); return; }
     if (G.mode !== 'explore') { e.walking = false; return; }
     const dxp = G.player.x - e.x;
     const dyp = (G.player.y - 8) - (e.baseline - 8);
-    if (Math.hypot(dxp, dyp) < 70) {
+    if (Math.hypot(dxp, dyp) < (e.route ? 22 : 70)) {
       // 玩家靠近：停下、转身看人
       e.walking = false;
       e.faceDir = Math.abs(dxp) > Math.abs(dyp) ? (dxp > 0 ? 'right' : 'left') : (dyp > 0 ? 'down' : 'up');
       return;
     }
-    if (reducedMotion()) return;
+    if (reducedMotion()) { e.walking=false; return; }
+    if (e.route) { updateResident(e,dt); return; }
 
     e.wanderT -= dt;
     if (e.wanderT <= 0 && !e.walking) {
@@ -148,6 +215,7 @@
   //  场景装载
   // ----------------------------------------------------------
   function loadScene(sceneId, spawnKey, savedPos) {
+    if (sceneId !== 'village' && !G.villageWorld) loadScene('village', 'default', null);
     const def = sceneById(sceneId) || sceneById('village');
     if (!def) { showFallback('场景数据缺失'); return; }
 
@@ -188,7 +256,8 @@
         const inside = r >= 0 && r < rows.length && c0 >= 0 && c0 < cols;
         if (inside && spec.solid) colliders.push({ x: x, y: y, w: TILE, h: TILE });
         if (spec.water) { waterCells.push([c0, r]); continue; }
-        const img = G.art.tiles[spec.tile];
+        const variants = spec.tile === 'grass' ? G.art.tiles.grassVariants : spec.tile === 'path' ? G.art.tiles.pathVariants : null;
+        const img = variants ? variants[Math.abs(c0 * 31 + r * 17) % variants.length] : G.art.tiles[spec.tile];
         if (img) gg.drawImage(img, gx, gy);
         if (inside && spec.entity) {
           const ent = makeEntity(spec.entity, c0, r);
@@ -199,6 +268,7 @@
         }
       }
     }
+    if (window.LGLandscape) window.LGLandscape.decorate(gg, def, legend, PAD);
     // 地图四边的隐形墙：玩家不能走出原始地图范围
     colliders.push({ x: -2, y: -2, w: W + 4, h: 2 });
     colliders.push({ x: -2, y: H, w: W + 4, h: 2 });
@@ -212,23 +282,33 @@
       if (!cd) continue;
       const sprite = G.art.npc[cd.sprite] || G.art.npc['npc-painter'];
       const px0 = conf.at[0] * TILE, py0 = conf.at[1] * TILE;
-      const ent = {
-        kind: 'npc', sprite: sprite, x: px0 + TILE / 2, baseline: py0 + TILE,
+      let ent = {
+        kind: 'npc', sprite: sprite, x: px0 + TILE / 2, baseline: py0 + (conf.route ? 12 : TILE),
         drawW: 16, drawH: 20, dir: 'down', bobSeed: (conf.at[0] * 7 + conf.at[1] * 13) % 10,
         label: cd.name, isDemo: !!cd.isDemo, npcId: cd.id,
         faceDir: 'down', facing: null,
+        route: conf.route, routeIndex: 0, nightHome: conf.nightHome, homeScene: conf.homeScene, speed: conf.speed, path: [],
+        homeProjection: !!conf.homeProjection,
         // —— 生活行为：出生点漫游 ——
         homeX: px0 + TILE / 2, homeY: py0 + TILE,
         wanderT: 1.5 + Math.random() * 3, walking: false, tx: 0, ty: 0
       };
       ent.collider = { x: px0 + 2, y: py0 + 4, w: TILE - 4, h: TILE - 6 };
-      colliders.push(ent.collider);
+      if (conf.route) {
+        const old=G.villageWorld && G.villageWorld.entities.find(e=>e.npcId===conf.id);
+        if(old) ent=old;
+        else if(window.LGLandscape.nightAmount(G)>.65) {
+          ent.night=true; ent.inside=true; ent.arrivedHome=true;
+          ent.x=conf.nightHome[0]*TILE+8; ent.baseline=conf.nightHome[1]*TILE+12;
+        }
+      }
+      if (!conf.route && !conf.homeProjection) colliders.push(ent.collider);
       entities.push(ent);
       // 人物自带对话互动
       interactZones.push({
         id: 'npc-' + cd.id, kind: 'npc', ent: ent,
         cx: px0 + TILE / 2, cy: py0 + TILE / 2,
-        type: 'dialogue', dialogueId: cd.dialogueId,
+        type: 'dialogue', dialogueId: conf.dialogueId || cd.dialogueId,
         hint: cd.name, isDemo: !!cd.isDemo
       });
     }
@@ -299,6 +379,13 @@
       passageZones: passageZones,
       entitySprites: null
     };
+    G.scene.lights = window.LGLandscape ? window.LGLandscape.lights(def, legend) : [];
+    const staticColliders = colliders.filter(c => !entities.some(e => e.kind === 'npc' && e.collider === c));
+    G.scene.walkable = Array.from({length:cols*rows.length}, (_,i) =>
+      !hitsAny(staticColliders, i%cols*TILE+3, Math.floor(i/cols)*TILE+6, 10, 6));
+    if (def.id === 'village') G.villageWorld=G.scene;
+    syncResidents();
+    resize();
     G.player.x = spawn.x; G.player.y = spawn.y;
     G.player.dir = 'down'; G.player.moving = false;
     G.camera.x = cameraTarget(G.player.x, W, viewW());
@@ -316,6 +403,13 @@
     }
 
     $('hud-location').textContent = def.name || def.id;
+    updateJourney();
+    const arrival = $('scene-arrival');
+    arrival.textContent = def.name || def.id;
+    arrival.classList.remove('visible');
+    clearTimeout(G.arrivalTimer);
+    requestAnimationFrame(function () { arrival.classList.add('visible'); });
+    G.arrivalTimer = setTimeout(function () { arrival.classList.remove('visible'); }, 2800);
     G.save.sceneId = def.id;
     G.save.pos = { x: spawn.x, y: spawn.y };
     queueSave();
@@ -324,7 +418,7 @@
   function makeEntity(kind, c0, r) {
     const ents = G.art.entities;
     const spec = {
-      tree:  { img: ents.tree[(c0 + r) % 2], w: 24, h: 32, dx: -4, solid: true,  sways: true },
+      tree:  { img: ents.tree[(c0 * 3 + r) % ents.tree.length], w: 24, h: 32, dx: -4, solid: true,  sways: true },
       bush:  { img: ents.bush,  w: 16, h: 14, dx: 0,  solid: false },
       stone: { img: ents.stone, w: 14, h: 10, dx: 1,  solid: false },
       fence: { img: ents.fence, w: 16, h: 16, dx: 0,  solid: true },
@@ -335,6 +429,7 @@
       bed:   { img: ents.bed,   w: 16, h: 26, dx: 0,  solid: true },
       desk:  { img: ents.desk,  w: 22, h: 16, dx: -3, solid: true },
       shelf: { img: ents.shelf, w: 16, h: 20, dx: 0,  solid: true },
+      ...Object.fromEntries(['table','workbench','stool','plant','basket','stove','cabinet'].map(kind=>[kind,{img:ents[kind],w:24,h:24,dx:0,solid:true}])),
       // —— 建筑素材库（村落 / 县城 / 城市内容包）——
       selfhouse:  { img: ents.selfhouse,  w: 24, h: 28, dx: -4,  solid: true, big: true },
       resident:   { img: ents.resident,   w: 28, h: 46, dx: -6,  solid: true, big: true },
@@ -404,7 +499,9 @@
     canvas.height = Math.floor(cssH * dpr);
     // 缩放策略：画面铺满整个界面 —— 取能覆盖视口的最小整数倍
     // （地图×倍率 ≥ 视口），无黑边且保持像素锐利；上限 7 防止过分放大
-    if (G.scene && G.scene.W) {
+    if (G.scene && G.scene.def.indoor) {
+      viewScale = Math.max(1, Math.min(4, Math.floor(Math.min(cssW / (G.scene.W + 32), cssH / (G.scene.H + 32)))));
+    } else if (G.scene && G.scene.W) {
       const need = Math.max(cssW / G.scene.W, cssH / G.scene.H);
       viewScale = Math.max(2, Math.min(7, Math.ceil(need)));
     } else {
@@ -424,16 +521,32 @@
   };
 
   function onKeyDown(e) {
+    if (e.code === 'Tab' && G.mode !== 'explore') {
+      const modal = G.mode === 'intro' ? $('intro') : G.mode === 'panel' ? $('panel') : $('dialogue');
+      const nodes = Array.from(modal.querySelectorAll('button, a[href], input, select')).filter(n => !n.disabled && n.getClientRects().length);
+      if (nodes.length && (!modal.contains(document.activeElement) ||
+          (e.shiftKey && document.activeElement === nodes[0]) ||
+          (!e.shiftKey && document.activeElement === nodes[nodes.length - 1]))) {
+        e.preventDefault(); nodes[e.shiftKey ? nodes.length - 1 : 0].focus();
+      }
+      return;
+    }
+    if (e.code === 'Escape') {
+      if (!$('game-menu').hidden) { setMenuOpen(false, true); return; }
+      if (G.mode === 'panel') closePanel();
+      else if (G.mode === 'dialogue') closeDialogue();
+      return;
+    }
+    if (e.target.closest('input, select, textarea, [contenteditable]')) return;
+    if (e.target.closest('button, a') && ['Enter', 'Space'].includes(e.code)) return;
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { G.keys.run = true; return; }
+    if (G.mode === 'explore' && e.code === 'KeyM') { openPanel('map'); return; }
+    if (G.mode === 'explore' && e.code === 'KeyB') { openPanel('book'); return; }
     if (e.repeat) { if (KEYMAP[e.code] || e.code === 'Space') e.preventDefault(); return; }
     window.GameAudio.unlock();
 
-    if (e.code === 'Escape') {
-      if (G.mode === 'dialogue') { closeDialogue(); }
-      else if (G.mode === 'panel') { closePanel(); }
-      e.preventDefault();
-      return;
-    }
     if (KEYMAP[e.code]) {
+      if (!$('game-menu').hidden) { setMenuOpen(false); canvas.focus({ preventScroll: true }); }
       G.keys[KEYMAP[e.code]] = true;
       e.preventDefault();
       return;
@@ -447,6 +560,7 @@
   }
 
   function onKeyUp(e) {
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') G.keys.run = false;
     if (KEYMAP[e.code]) { G.keys[KEYMAP[e.code]] = false; e.preventDefault(); }
   }
 
@@ -465,15 +579,16 @@
   // ----------------------------------------------------------
   function update(dt) {
     G.time += dt;
-    if (G.mode === 'explore') {
+    if (G.mode === 'explore' && !G.transitioning) {
       const [dx, dy] = inputVector();
       const moving = dx !== 0 || dy !== 0;
       G.player.moving = moving;
       if (moving) {
         // 斜向速度归一
         const len = Math.hypot(dx, dy);
-        const vx = dx / len * PLAYER_SPEED * dt;
-        const vy = dy / len * PLAYER_SPEED * dt;
+        const speed = PLAYER_SPEED * (G.keys.run ? 1.55 : 1);
+        const vx = dx / len * speed * dt;
+        const vy = dy / len * speed * dt;
         // 先 X 后 Y，允许贴墙滑动
         if (!playerBlocked(G.player.x + vx, G.player.y)) G.player.x += vx;
         if (!playerBlocked(G.player.x, G.player.y + vy)) G.player.y += vy;
@@ -482,7 +597,7 @@
         if (Math.abs(dx) > Math.abs(dy)) G.player.dir = dx > 0 ? 'right' : 'left';
         else G.player.dir = dy > 0 ? 'down' : 'up';
 
-        G.player.animT += dt;
+        G.player.animT += dt * (G.keys.run ? 1.4 : 1);
         G.player.frame = Math.floor(G.player.animT / 0.16) % 2 + 1;
         G.player.stepT += dt;
         if (G.player.stepT > 0.3) { G.player.stepT = 0; window.GameAudio.step(); }
@@ -517,9 +632,14 @@
         }
       }
 
+      // Keep interaction positions attached to wandering NPCs.
+      for (const z of G.scene.interactZones) {
+        if (z.kind === 'npc' && z.ent) { z.cx = z.ent.x; z.cy = z.ent.baseline - 8; }
+      }
       // 最近的可互动对象
       let best = null, bestD = INTERACT_RADIUS;
       for (const z of G.scene.interactZones) {
+        if (z.ent && z.ent.hidden) continue;
         const d = Math.hypot(z.cx - G.player.x, z.cy - (G.player.y - 8));
         if (d < bestD) { best = z; bestD = d; }
       }
@@ -530,10 +650,14 @@
     // 相机跟随；地图小于视口时把地图整体居中（负偏移）
     const tx = cameraTarget(G.player.x, G.scene.W, viewW());
     const ty = cameraTarget(G.player.y, G.scene.H, viewH());
-    const lerp = reducedMotion() ? 1 : 0.14;
+    const lerp = reducedMotion() ? 1 : 1 - Math.exp(-9 * dt);
     G.camera.x += (tx - G.camera.x) * lerp;
     G.camera.y += (ty - G.camera.y) * lerp;
 
+    if (G.mode === 'explore' && G.villageWorld) {
+      for(const resident of G.villageWorld.entities) if(resident.route) updateResident(resident, dt);
+    }
+    syncResidents();
     // NPC 生活行为（漫游 / 靠近看人；对话与面板打开时冻结）
     if (G.scene && G.scene.entities) {
       for (const e of G.scene.entities) {
@@ -576,7 +700,8 @@
     ctx.translate(-camX, -camY);
 
     // 地面（含四周延伸区）
-    ctx.drawImage(G.scene.ground, -G.PAD, -G.PAD);
+    if (G.scene.def.indoor) ctx.drawImage(G.scene.ground, G.PAD, G.PAD, G.scene.W, G.scene.H, 0, 0, G.scene.W, G.scene.H);
+    else ctx.drawImage(G.scene.ground, -G.PAD, -G.PAD);
 
     // 水面（动画帧）
     const wframes = G.art.tiles.water;
@@ -584,6 +709,8 @@
     for (const [c0, r] of G.scene.waterCells) {
       ctx.drawImage(wframes[(wf + c0 * 3 + r * 7) % wframes.length], c0 * TILE, r * TILE);
     }
+
+    if (window.LGLandscape) window.LGLandscape.shadows(ctx, G.scene.entities);
 
     // 生活细节层：静态杂物（实体之下）
     if (window.LGDetails) window.LGDetails.draw(ctx, 'ground');
@@ -595,6 +722,7 @@
     const list = [];
     const pad = 48;
     for (const e of G.scene.entities) {
+      if (e.hidden) continue;
       if (e.baseline < camY - pad || e.baseline > camY + viewH() + pad) continue;
       if (e.x < camX - pad || e.x > camX + viewW() + pad) continue;
       list.push(e);
@@ -618,16 +746,24 @@
       }
       let img = e.img;
       if (e.kind === 'npc') {
-        img = e.sprite[e.faceDir || 'down'][0];
+        img = e.sprite[e.faceDir || 'down'][e.walking ? Math.floor(G.time / .18) % 2 + 1 : 0];
       }
       const bob = e.kind === 'npc' && !reducedMotion()
         ? (Math.sin(G.time / 0.6 + e.bobSeed) > 0 ? -1 : 0) : 0;
+      const obscuresPlayer = e.kind === 'tree' && G.player.y < e.baseline &&
+        G.player.y > e.baseline - e.drawH && Math.abs(G.player.x - e.x) < e.drawW / 2;
+      ctx.globalAlpha = obscuresPlayer ? .48 : 1;
       ctx.drawImage(img, Math.round(e.x - e.drawW / 2 + ox), Math.round(e.baseline - e.drawH + bob));
     }
+
+    ctx.globalAlpha = 1;
 
     // 互动提示标记（在目标上方轻跳）
     const showMarkers = !reducedMotion() ? 1 : 0;
     for (const z of G.scene.interactZones) {
+      if (z.ent && z.ent.hidden) continue;
+      if (z.memoryId && G.discovered.has(z.memoryId) && z !== G.interactTarget) continue;
+      if (z.kind === 'npc' && z !== G.interactTarget) continue;
       const mx = z.cx, my = z.cy;
       if (mx < camX - 16 || mx > camX + viewW() + 16) continue;
       if (my < camY - 16 || my > camY + viewH() + 16) continue;
@@ -642,6 +778,15 @@
     if (window.LGDetails) window.LGDetails.draw(ctx, 'top');
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (window.LGLandscape) {
+      window.LGLandscape.light(ctx, G, canvas.width, canvas.height, k);
+      const phase = window.LGLandscape.daylight(G);
+      const hour=Math.floor(phase*24), minute=Math.floor(phase*1440)%60;
+      const clock=String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0');
+      const label = G.scene.def.indoor ? '⌂ 屋内 · '+clock :
+        (hour<5 || hour>=20 ? '☾ 夜晚' : hour<8 ? '☀ 清晨' : hour<17 ? '☀ 白天' : '◒ 傍晚')+' · '+clock;
+      if ($('world-light').textContent !== label) $('world-light').textContent = label;
+    }
   }
 
   // ----------------------------------------------------------
@@ -650,7 +795,7 @@
   function updateHint() {
     const hint = $('hint');
     const t = G.interactTarget;
-    if (!t || G.mode !== 'explore') { hint.hidden = true; return; }
+    if (!t || (t.ent && t.ent.hidden) || G.mode !== 'explore') { hint.hidden = true; return; }
     const isMobile = document.body.classList.contains('touch');
     hint.textContent = (isMobile ? '点 ● ' : '按 E · ') + (t.hint || '查看');
     hint.hidden = false;
@@ -658,7 +803,7 @@
 
   function doInteract() {
     const t = G.interactTarget;
-    if (!t) return;
+    if (!t || (t.ent && t.ent.hidden)) return;
     if (t.kind === 'npc' && t.ent) t.ent.faceDir = faceTowards(t.ent);
     window.GameAudio.blip();
     switch (t.type) {
@@ -685,6 +830,7 @@
   }
 
   function switchScene(toScene, spawnKey) {
+    if (G.transitioning) return;
     if (!sceneById(toScene)) { toast('（场景还在搭建中。）'); return; }
     window.GameAudio.warp();
     const doSwitch = function () {
@@ -694,11 +840,13 @@
       queueSave();
     };
     if (reducedMotion()) { doSwitch(); return; }
+    G.transitioning = true;
+    G.keys = {};
     const fade = $('fade');
     fade.classList.add('on');
     setTimeout(function () {
       doSwitch();
-      setTimeout(function () { fade.classList.remove('on'); }, 120);
+      setTimeout(function () { fade.classList.remove('on'); G.transitioning = false; }, 120);
     }, 180);
   }
 
@@ -724,6 +872,8 @@
     $('hint').hidden = true;
     renderDialogueNode();
     $('dialogue').hidden = false;
+    G.keys = {};
+    $('dialogue').focus();
     window.GameAudio.open();
   }
 
@@ -826,6 +976,7 @@
     G.dialogue = null;
     G.mode = 'explore';
     $('dialogue').hidden = true;
+    canvas.focus({ preventScroll: true });
     window.GameAudio.close();
   }
 
@@ -850,6 +1001,7 @@
     G.save.discovered = Array.from(G.discovered);
     G.bookDirty = true;
     updateBookBadge();
+    updateJourney();
     window.GameAudio.chime();
     toast('已收录到回忆手册：《' + (mem.title || id) + '》');
     // 章节完成检查：本章回忆全部集齐 → 下一章解锁
@@ -875,23 +1027,31 @@
   let activePanel = null;
 
   function openPanel(name) {
+    setMenuOpen(false);
+    if (G.mode === 'dialogue') closeDialogue();
     activePanel = name;
+    G.panelReturnMode = G.mode === 'intro' ? 'intro' : 'explore';
+    G.keys = {};
     G.mode = 'panel';
     $('hint').hidden = true;
     const body = $('panel-body');
     body.innerHTML = '';
-    if (name === 'book') buildBookPanel(body);
+    if (name === 'map') buildMapPanel(body);
+    else if (name === 'book') buildBookPanel(body);
     else if (name === 'settings') buildSettingsPanel(body);
     else buildHelpPanel(body);
     $('panel').hidden = false;
     $('panel').scrollTop = 0;
+    $('panel').querySelector('button').focus();
     window.GameAudio.open();
   }
 
   function closePanel() {
     activePanel = null;
-    G.mode = 'explore';
+    G.keys = {};
+    G.mode = G.panelReturnMode || 'explore';
     $('panel').hidden = true;
+    canvas.focus({ preventScroll: true });
     window.GameAudio.close();
   }
 
@@ -904,6 +1064,46 @@
     head.appendChild(h);
     head.appendChild(close);
     return head;
+  }
+
+  function updateJourney() {
+    if (!G.scene) return;
+    const memories = G.scene.interactZones.filter(z => z.memoryId && memoryById(z.memoryId));
+    const next = memories.find(z => !G.discovered.has(z.memoryId));
+    $('journey-title').textContent = next ? '去看看' + next.hint : '沿着小路，继续走走';
+    const found = memories.filter(z => G.discovered.has(z.memoryId)).length;
+    $('journey-progress').textContent = '此地回忆 ' + found + ' / ' + memories.length + ' · 点击查看地图';
+  }
+
+  function buildMapPanel(root) {
+    root.appendChild(panelHeader('旅途地图'));
+    root.appendChild(el('p', 'panel-note', '红点是你，浅黄色标记是可以互动的地方。沿路探索，也可以从下方前往已开放的章节。'));
+    const map = el('canvas', 'journey-map');
+    map.setAttribute('role', 'img');
+    map.setAttribute('aria-label', (G.scene.def.name || '') + '地图；下方提供地点文字列表');
+    if (window.LGLandscape) window.LGLandscape.map(map, G);
+    root.appendChild(map);
+    const places = el('div', 'map-places');
+    for (const z of G.scene.interactZones) {
+      if (z.ent && z.ent.hidden) continue;
+      places.appendChild(el('span', '', (z.memoryId && G.discovered.has(z.memoryId) ? '✓ ' : '· ') + z.hint));
+    }
+    root.appendChild(places);
+    const list = el('div', 'chapter-route');
+    (DATA.chapters || []).forEach(function (ch, i, chapters) {
+      const row = el('div', 'chapter-stop');
+      const heading = el('div', 'chapter-copy');
+      heading.appendChild(el('strong', '', ch.title));
+      const progress = chapterProgress(ch);
+      heading.appendChild(el('small', '', (ch.isDemo ? '玩法演示 · ' : '') + '回忆 ' + progress.found + ' / ' + progress.total));
+      row.appendChild(heading);
+      const available = ch.status === 'available' && sceneById(ch.sceneId) && chapterUnlocked(chapters, i);
+      const btn = el('button', 'btn-pixel', available ? '前往 →' : '尚未开放');
+      btn.disabled = !available;
+      btn.addEventListener('click', function () { closePanel(); switchScene(ch.sceneId, 'default'); });
+      row.appendChild(btn); list.appendChild(row);
+    });
+    root.appendChild(list);
   }
 
   // —— 回忆手册 ——
@@ -954,7 +1154,7 @@
     root.innerHTML = '';
     root.appendChild(panelHeader('回忆手册'));
     const back = el('button', 'btn-pixel btn-back', '← 返回手册');
-    back.addEventListener('click', function () { window.GameAudio.flip(); buildBookPanel(root); });
+    back.addEventListener('click', function () { window.GameAudio.flip(); root.innerHTML = ''; buildBookPanel(root); });
     root.appendChild(back);
 
     const head = el('div', 'memory-head');
@@ -1017,11 +1217,26 @@
     soundChk.addEventListener('change', function () {
       G.settings.sound = soundChk.checked;
       window.GameAudio.setEnabled(G.settings.sound);
+      updateSoundButton();
       queueSave();
     });
     soundRow.appendChild(soundChk);
     soundRow.appendChild(el('span', null, '音效（互动、翻页、收录提示音）'));
     root.appendChild(soundRow);
+
+    const dayRow = el('label', 'setting-row');
+    dayRow.appendChild(el('span', null, '村庄时段'));
+    const daySelect = el('select');
+    daySelect.setAttribute('aria-label', '村庄时段');
+    for (const [value,label] of [['auto','自动昼夜交替'],['dawn','清晨'],['day','白天'],['dusk','傍晚'],['night','夜晚']]) {
+      const option = el('option', '', label); option.value=value; daySelect.appendChild(option);
+    }
+    daySelect.value = G.settings.timeOfDay || (G.settings.dayCycle === false ? 'day' : 'auto');
+    daySelect.addEventListener('change', function () {
+      G.settings.timeOfDay=daySelect.value; G.settings.dayCycle=daySelect.value==='auto'; queueSave();
+    });
+    dayRow.appendChild(daySelect); root.appendChild(dayRow);
+    root.appendChild(el('p','panel-note','自动模式约 8 分钟走过一天。夜里窗户和路灯会亮起，村民沿巷道走进各自家中；可随时切换时段。'));
 
     const motionRow = el('label', 'setting-row');
     const motionChk = el('input');
@@ -1078,7 +1293,7 @@
     const ul = el('ul', 'help-list');
     for (const line of (isMobile
       ? ['左下方向键移动', '右下 ● 按钮互动 / 对话推进', '顶部按钮打开人生地图、回忆手册和设置']
-      : ['WASD 或方向键移动', '靠近发光的对象，按 E 或空格互动', '对话中按 E / 空格继续，Esc 关闭', '页面顶部按钮打开人生地图、回忆手册和设置'])) {
+      : ['WASD 或方向键移动，按住 Shift 奔跑', 'M 打开地图，B 打开回忆手册', '靠近发光的对象，按 E 或空格互动', '对话中按 E / 空格继续，Esc 关闭', '页面顶部按钮打开人生地图、回忆手册和设置'])) {
       ul.appendChild(el('li', null, line));
     }
     ops.appendChild(ul);
@@ -1138,7 +1353,7 @@
       window.GameSave.save({
         sceneId: G.save.sceneId, pos: { x: G.player.x, y: G.player.y },
         discovered: G.save.discovered, settings: G.settings,
-        seenIntro: G.save.seenIntro
+        worldTime: G.time, seenIntro: G.save.seenIntro
       });
     }, 150);
   }
@@ -1147,15 +1362,16 @@
     window.GameSave.save({
       sceneId: G.save.sceneId, pos: { x: G.player.x, y: G.player.y },
       discovered: G.save.discovered, settings: G.settings,
-      seenIntro: G.save.seenIntro
+      worldTime: G.time, seenIntro: G.save.seenIntro
     });
   });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') {
+      G.keys = {};
       window.GameSave.save({
         sceneId: G.save.sceneId, pos: { x: G.player.x, y: G.player.y },
         discovered: G.save.discovered, settings: G.settings,
-        seenIntro: G.save.seenIntro
+        worldTime: G.time, seenIntro: G.save.seenIntro
       });
     }
   });
@@ -1167,10 +1383,12 @@
     G.mode = 'intro';
     const intro = $('intro');
     intro.hidden = false;
+    $('intro-start').focus();
     $('intro-start').onclick = function () {
       intro.hidden = true;
       G.mode = 'explore';
       G.save.seenIntro = true;
+      canvas.focus({ preventScroll: true });
       queueSave();
       window.GameAudio.open();
     };
@@ -1221,15 +1439,18 @@
   //  主循环
   // ----------------------------------------------------------
   let lastT = performance.now();
+  let frameErrors = 0;
   function frame(now) {
     const dt = Math.min((now - lastT) / 1000, 0.05);
     lastT = now;
     try {
       update(dt);
       render();
+      frameErrors = 0;
     } catch (e) {
       // 渲染出错只中断当前帧，避免整个页面崩掉
       console.error('[life-game]', e);
+      if (++frameErrors >= 3) { showFallback('场景暂时无法显示，请刷新重试。你的已有存档仍然保留。'); return; }
     }
     requestAnimationFrame(frame);
   }
@@ -1237,6 +1458,12 @@
   // ----------------------------------------------------------
   //  启动
   // ----------------------------------------------------------
+  function setMenuOpen(open, focusTrigger) {
+    $('game-menu').hidden = !open;
+    $('btn-menu').setAttribute('aria-expanded', String(open));
+    if (focusTrigger) $('btn-menu').focus({ preventScroll: true });
+  }
+
   function boot() {
     G.art = window.PixelArt.buildAll();
     window.GameAudio.setEnabled(G.settings.sound);
@@ -1248,6 +1475,17 @@
     window.addEventListener('blur', function () { G.keys = {}; });
     window.addEventListener('resize', function () { resize(); });
 
+    $('btn-menu').addEventListener('click', function () {
+      if (G.mode !== 'explore') return;
+      G.keys = {};
+      setMenuOpen($('game-menu').hidden);
+    });
+    document.addEventListener('pointerdown', function (e) {
+      if (!e.target.closest('.game-topbar')) setMenuOpen(false);
+    });
+    $('btn-map').addEventListener('click', function () { openPanel('map'); });
+    $('journey-note').addEventListener('click', function () { openPanel('map'); });
+    canvas.addEventListener('pointerdown', function () { if (G.mode === 'explore') canvas.focus(); });
     // 顶部按钮
     $('btn-book').addEventListener('click', function () {
       window.GameAudio.unlock();
@@ -1272,6 +1510,7 @@
       updateSoundButton();
       window.GameAudio.unlock();
       queueSave();
+      setMenuOpen(false, true);
     });
 
     // 恢复存档：场景合法才恢复，否则回到默认场景
@@ -1292,6 +1531,8 @@
 
     // 游戏启动成功：隐藏静态回退区，锁住页面滚动
     document.body.classList.add('game-ready');
+    resize();
+    if (G.mode === 'intro') $('intro-start').focus();
     const fb = $('static-fallback');
     if (fb) fb.hidden = true;
   }

@@ -14,10 +14,10 @@ window.PixelArt = (function () {
   // —— 统一色板（温暖乡村风，原创配色） ——
   const P = {
     outline: '#2e2417',
-    grassA: '#7cb85f', grassB: '#8cc76e', grassC: '#6aa752', grassD: '#5c9247',
+    grassA: '#85ad62', grassB: '#a2c477', grassC: '#78a15b', grassD: '#648b4f',
     flowerW: '#f6f2df', flowerY: '#f0cf5e', flowerP: '#e2a0c4',
     path: '#d6b98a', pathD: '#c3a171', pathL: '#e5cd9d',
-    waterA: '#5493d6', waterB: '#4383c8', waterC: '#74b3e8', foam: '#e3f0fa',
+    waterA: '#659fae', waterB: '#52899d', waterC: '#88bbc3', foam: '#e3f0fa',
     soil: '#a97c50', soilD: '#936740', sprout: '#8cbc66',
     roof: '#bd6046', roofD: '#a34f38', roofL: '#cf7c5a',
     wall: '#f1e4c1', wallD: '#dccca3', timber: '#8a5a3b',
@@ -163,18 +163,19 @@ window.PixelArt = (function () {
     return c;
   }
 
-  function tileRoof() {
+  function tileRoof(colors) {
+    colors = colors || [P.roof, P.roofD, P.roofL];
     const [c, g] = makeCanvas(TILE, TILE);
-    g.fillStyle = P.roof; g.fillRect(0, 0, TILE, TILE);
-    g.fillStyle = P.roofD;
+    g.fillStyle = colors[0]; g.fillRect(0, 0, TILE, TILE);
+    g.fillStyle = colors[1];
     for (let y = 2; y < TILE; y += 4) g.fillRect(0, y, TILE, 2);
     // 交错瓦缝
-    g.fillStyle = P.roofD;
+    g.fillStyle = colors[1];
     for (let row = 0; row < 4; row++) {
       const off = row % 2 ? 4 : 0;
       for (let x = off; x < TILE; x += 8) g.fillRect(x, row * 4, 1, 4);
     }
-    g.fillStyle = P.roofL; g.fillRect(0, 0, TILE, 1);
+    g.fillStyle = colors[2]; g.fillRect(0, 0, TILE, 1);
     return c;
   }
 
@@ -242,21 +243,25 @@ window.PixelArt = (function () {
   function entTree(variant) {
     const [c, g] = makeCanvas(24, 32);
     const rnd = mulberry32(500 + variant * 91);
-    // 树干
-    rectO(g, 9, 22, 6, 9, P.trunk);
-    g.fillStyle = P.trunkD; g.fillRect(11, 23, 1, 7);
-    // 树冠（大圆 + 错落小圆 + 亮点）
-    circle(g, 12, 12, 9, P.leafC);
-    circle(g, 12, 11, 8, P.leafA);
-    circle(g, 7, 14, 5, P.leafA);
-    circle(g, 17, 14, 5, P.leafA);
-    circle(g, 12, 7, 5, P.leafB);
-    for (let i = 0; i < 8; i++) {
-      const x = 4 + ((rnd() * 16) | 0), y = 4 + ((rnd() * 12) | 0);
-      px(g, x, y, rnd() < 0.5 ? P.leafB : P.leafC);
+    // Layered, irregular foliage with a shaded underside and sunlit leaf clusters.
+    rectO(g, 10, 20, 5, 11, P.trunkD);
+    g.fillStyle = '#ba8960'; g.fillRect(10, 22, 2, 8);
+    g.fillStyle = '#654d35'; g.fillRect(7, 30, 11, 2);
+    const pink = variant === 1;
+    const dark = pink ? '#98625e' : '#385c40';
+    const mid = pink ? '#c88579' : '#527e49';
+    const lit = pink ? '#edb49a' : '#83a75e';
+    circle(g, 12, 15, 10, dark);
+    circle(g, 7, 13, 6, dark); circle(g, 18, 12, 5, dark);
+    circle(g, 12, 10, 9, mid);
+    circle(g, 6, 11, 5, mid); circle(g, 17, 9, 5, mid);
+    circle(g, 10, 5, 4, lit); circle(g, 5, 10, 3, lit);
+    circle(g, 15, 8, 4, lit);
+    for (let i = 0; i < 25; i++) {
+      const x = 4 + ((rnd() * 16) | 0), y = 4 + ((rnd() * 16) | 0);
+      g.fillStyle = i % 3 ? mid : lit;
+      g.fillRect(x, y, 2, 1);
     }
-    // 树底投影提示（贴地一圈深绿）
-    g.fillStyle = P.leafC; g.fillRect(5, 30, 14, 1);
     return c;
   }
 
@@ -709,11 +714,14 @@ window.PixelArt = (function () {
       'npc-villager': { hair: '#3a332c', shirt: '#c9a15e', pants: '#4a5568', hat: '#d8c27a' },
       'npc-worker': { hair: '#231f20', shirt: '#e07b39', pants: '#3f4a63', hat: '#f2d13d' }
     };
+    ['#c77963','#719cb1','#aa91b7','#e1b867','#829b69','#d8cab2'].forEach(function (shirt,i) {
+      looks['npc-local-'+i] = {hair: i===4 ? '#bcb6a3' : '#49362e', shirt, pants: i%2 ? '#60576c' : '#5c6650', hat: i===3 ? '#d8ba72' : null};
+    });
     const out = {};
     for (const [id, look] of Object.entries(looks)) {
       out[id] = {};
       for (const dir of ['down', 'up', 'left', 'right']) {
-        out[id][dir] = [drawPerson({ ...look, dir, frame: 0 })];
+        out[id][dir] = [0, 1, 2].map(frame => drawPerson({ ...look, dir, frame }));
       }
     }
     return out;
@@ -726,6 +734,35 @@ window.PixelArt = (function () {
     g.fillStyle = P.outline; g.fillRect(3, 4, 1, 1);
     g.fillStyle = P.outline;
     g.fillRect(3, 7, 1, 1); g.fillRect(2, 6, 1, 1); g.fillRect(4, 6, 1, 1);
+    return c;
+  }
+
+  function entHomeItem(kind) {
+    const [c,g]=makeCanvas(24,24);
+    if(kind==='table' || kind==='workbench') {
+      rectO(g,3,13,3,9,'#765438');rectO(g,18,13,3,9,'#765438');
+      rectO(g,1,7,22,9,kind==='table'?'#c89b64':'#9d794f');
+      g.fillStyle='#e3bd7e';g.fillRect(2,8,20,2);
+      if(kind==='table') { circle(g,9,11,3,'#eee2be');circle(g,9,11,1,'#a1784a');rectO(g,16,10,3,3,'#e9d4a6'); }
+      else {g.fillStyle='#566471';g.fillRect(5,9,8,2);g.fillStyle='#cdb08a';g.fillRect(10,10,2,5);g.fillRect(16,10,4,2);}
+    } else if(kind==='stool') {
+      rectO(g,7,15,2,8,'#765438');rectO(g,15,15,2,8,'#765438');rectO(g,5,12,14,5,'#c69a65');
+    } else if(kind==='plant') {
+      rectO(g,8,16,9,7,'#b77350');circle(g,12,10,6,'#527847');circle(g,8,8,4,'#8ca363');
+      g.fillStyle='#e6b886';g.fillRect(7,16,11,2);g.fillStyle='#e0aaad';g.fillRect(12,5,3,3);
+    } else if(kind==='basket') {
+      rectO(g,5,12,15,10,'#bb8c53');g.fillStyle='#6e5136';
+      for(let y=14;y<22;y+=3)g.fillRect(6,y,13,1);
+      g.fillRect(6,8,2,5);g.fillRect(17,8,2,5);g.fillRect(8,7,9,2);
+      g.fillStyle='#81a15b';g.fillRect(8,10,6,4);
+    } else if(kind==='stove') {
+      rectO(g,4,8,17,15,'#7d7d72');rectO(g,6,13,12,8,'#413e39');
+      g.fillStyle='#e4a45d';g.fillRect(9,16,5,4);g.fillStyle='#f6d992';g.fillRect(11,14,2,5);
+      g.fillStyle='#535a58';g.fillRect(16,0,4,8);circle(g,10,7,4,'#454b48');
+    } else if(kind==='cabinet') {
+      rectO(g,4,2,17,21,'#986e49');g.fillStyle='#bc925c';g.fillRect(6,4,13,7);g.fillRect(6,13,13,7);
+      g.fillStyle='#e1c07e';g.fillRect(11,8,3,1);g.fillRect(11,16,3,1);
+    }
     return c;
   }
 
@@ -745,21 +782,24 @@ window.PixelArt = (function () {
     return {
       TILE,
       tiles: {
+        grassVariants: [11, 19, 37, 53, 71, 89].map(seed => tileGrass(seed)),
+        pathVariants: [31, 43, 59, 73].map(tilePath),
         grass: tileGrass(11), grassFlower: tileGrass(23, true),
         path: tilePath(31), soil: tileSoil(47),
         water: [tileWater(0), tileWater(1), tileWater(2)],
         shore: tileShore(),
-        roof: tileRoof(), wall: tileWall(), window: tileWindow(), door: tileDoor(),
+        roof: tileRoof(), roofSlate: tileRoof(['#6c8290','#506775','#98a6a7']), roofMoss: tileRoof(['#839263','#657447','#aaba7b']), wall: tileWall(), window: tileWindow(), door: tileDoor(),
         floor: tileFloor(), iwall: tileIWall(), rug: tileRug(),
         asphalt: tileAsphalt(), roadline: tileRoadline(), crosswalk: tileCrosswalk(),
         brickwall: tileBrickwall(), yard: tileYard(), bridge: tileBridge(),
         island: tileIsland()
       },
       entities: {
-        tree: [entTree(0), entTree(1)],
+        tree: [entTree(0), entTree(0), entTree(0), entTree(1)],
         bush: entBush(), stone: entStone(), fence: entFence(), lamp: entLamp(),
         sign: entSign(), chest: entChest(), kite: entKite(),
         bed: entBed(), desk: entDesk(), shelf: entShelf(),
+        ...Object.fromEntries(['table','workbench','stool','plant','basket','stove','cabinet'].map(kind=>[kind,entHomeItem(kind)])),
         selfhouse: entSelfhouse(), resident: entResident(), shop: entShop(),
         store: entStore(), schoolgate: entSchoolGate(), school: entSchool(),
         office: entOffice(), cw: entCw(), busstop: entBusstop(),

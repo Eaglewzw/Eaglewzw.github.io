@@ -18,9 +18,11 @@ window.GameSave = (function () {
       discovered: [],            // 已收录回忆的 id 列表
       settings: {
         sound: true,
+        dayCycle: true,
         reducedMotion: null       // null = 跟随系统 prefers-reduced-motion
       },
       seenIntro: false,
+      worldTime: 0,
       updatedAt: 0
     };
   }
@@ -40,6 +42,7 @@ window.GameSave = (function () {
         : [];
       if (typeof out.sceneId !== 'string') out.sceneId = null;
       if (!out.pos || typeof out.pos.x !== 'number' || typeof out.pos.y !== 'number') out.pos = null;
+      out.worldTime = Number.isFinite(data.worldTime) && data.worldTime >= 0 ? data.worldTime : 0;
       out.version = SAVE_VERSION;
       return out;
     } catch (e) {
@@ -56,6 +59,7 @@ window.GameSave = (function () {
         discovered: Array.from(state.discovered || []),
         settings: state.settings,
         seenIntro: !!state.seenIntro,
+        worldTime: state.worldTime || 0,
         updatedAt: Date.now()
       };
       localStorage.setItem(KEY, JSON.stringify(data));

@@ -369,9 +369,13 @@ window.LGDetails = (function () {
 
     // —— 炊烟（小屋屋顶，village；烤红薯炉，county） ——
     if (sceneKind === 'village') {
-      const anchor = (scene.entities || []).find(e => e.kind === 'door') ||
-                     (scene.entities || [])[0];
-      if (anchor) smoke.push({ x: anchor.x, y: anchor.baseline - 30, t: rnd() * 2, big: true });
+      if (scene.id === 'village') {
+        smoke.push({ x: 18 * TILE + 4, y: 6 * TILE - 9, t: rnd() * 2, big: true });
+        (scene.def.homes || []).forEach(function (home, i) {
+          if (i % 4 === 0) smoke.push({ x: (home[0] + 1) * TILE + 4,
+            y: (home[1] - 4) * TILE - 9, t: rnd() * 2, big: true });
+        });
+      }
     } else if (isCounty) {
       const stove = items.find(it => it.type === 'roaststove');
       if (stove) smoke.push({ x: stove.x, y: stove.y - 12, t: 0, big: false });
