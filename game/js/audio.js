@@ -819,8 +819,19 @@ window.GameAudio = (function () {
       }
     },
     isEnabled: function () { return enabled; },
+    life: function(kind,quiet){
+      if(!enabled||!unlocked||document.hidden)return;
+      const v=quiet?.004:.012;
+      if(kind==='bell'){[659,523,587,392].forEach((f,i)=>tone(f,.4,'sine',.01,i*.35));}
+      else if(kind==='water'){[700,430,800].forEach((f,i)=>tone(f,.09,'sine',v,i*.08));}
+      else if(kind==='cook'){tone(1200,.04,'triangle',v);tone(850,.06,'sine',v,.12);}
+      else if(kind==='work'||kind==='weave'){tone(180,.045,'triangle',v);tone(240,.045,'triangle',v,.22);}
+      else if(kind==='murmur'){tone(165,.12,'sine',v);tone(210,.1,'sine',v,.2);}
+      else if(kind==='depart'){tone(310,.24,'triangle',v);tone(240,.3,'sine',v,.2);}
+      else {tone(300,.04,'triangle',v);tone(380,.04,'triangle',v,.09);}
+    },
     blip:   function () { tone(520, 0.07, 'square', 0.03); },               // 交互
-    step:   function () { tone(170 + Math.random() * 40, 0.045, 'triangle', 0.012); }, // 脚步
+    step:   function (surface) { const hard=['asphalt','yard','floor','bridge'].includes(surface);tone((hard?220:140)+Math.random()*30,hard?.035:.055,'triangle',hard?.01:.007); },
     advance: function () { tone(640, 0.05, 'square', 0.025); },            // 对话下一句
     open:   function () { tone(440, 0.06, 'square', 0.03); tone(660, 0.07, 'square', 0.03, 0.06); },
     close:  function () { tone(520, 0.05, 'square', 0.025); tone(392, 0.06, 'square', 0.025, 0.05); },

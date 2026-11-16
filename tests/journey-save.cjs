@@ -1,0 +1,17 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+let saved=null;const context={window:{matchMedia:()=>({matches:false})},localStorage:{getItem:()=>saved,setItem:(_,v)=>saved=v,removeItem:()=>saved=null}};
+vm.createContext(context);
+for(const name of ['chapters','scenes','characters','dialogues','memories','pack-village','pack-county','pack-city','village-life','village-homes','act-one'])vm.runInContext(fs.readFileSync('game/data/'+name+'.js','utf8'),context);
+for(const name of ['life-journey','save'])vm.runInContext(fs.readFileSync('game/js/'+name+'.js','utf8'),context);
+const {LifeJourney:j,GameSave:save}=context.window;
+saved=JSON.stringify({story:{step:4},discovered:['mem-act-one-stool'],settings:{sound:false}});
+const old=save.load();assert.equal(old.journey.stage,0);assert.equal(old.story.step,4);assert.equal(old.settings.sound,false);assert.equal(old.discovered[0],'mem-act-one-stool');
+saved=JSON.stringify({journey:{stage:Infinity,day:-100,events:['water','water','nonsense'],bonds:{'village-resident-0':999},letter:'bad'}});
+const cleaned=save.load().journey;assert.equal(cleaned.stage,0);assert.equal(cleaned.day,1);assert.equal(cleaned.events.length,1);assert.equal(cleaned.bonds['village-resident-0'],4);assert.equal(cleaned.letter,'');
+const s={journey:j.defaults(),story:{step:4},settings:{reducedMotion:false},time:0};
+assert.equal(j.apply('depart',s),null,'out-of-order events may not skip the story');
+assert.ok(j.apply('water',s));assert.equal(s.journey.stage,1);const score=s.journey.bonds['village-resident-0'];
+assert.equal(j.apply('water',s),null,'repeat interactions may not farm relationship progress');assert.equal(s.journey.bonds['village-resident-0'],score);
+save.save({story:s.story,journey:s.journey,discovered:[],settings:s.settings,sceneId:'village',worldTime:0});assert.equal(save.load().journey.stage,1);
+save.reset();assert.equal(save.load().journey.stage,0);assert.equal(save.load().journey.day,1);
+console.log('PASS: existing saves migrate, malformed fields sanitize, event ordering and rewards are idempotent, journey saves and resets.');

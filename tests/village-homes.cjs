@@ -16,7 +16,7 @@ const assert=require('node:assert/strict');
   },id);
   await page.locator('#game-canvas').focus();await page.keyboard.down('ArrowUp');await page.waitForTimeout(400);await page.keyboard.up('ArrowUp');
   await page.waitForFunction(id=>__lifeGame.state.scene.id===id,id);
-  assert.equal(await page.evaluate(()=>__lifeGame.state.scene.entities.filter(e=>e.homeProjection&&!e.hidden).length),0);
+  assert.deepEqual(await page.evaluate(()=>{const g=__lifeGame.state;return g.scene.entities.filter(e=>e.homeProjection&&!e.hidden).map(e=>e.npcId).sort()}),await page.evaluate(()=>{const g=__lifeGame.state;return g.villageWorld.entities.filter(e=>e.inside&&(e.insideScene||e.homeScene)===g.scene.id).map(e=>e.npcId).sort()}));
   const clear=await page.evaluate(()=>{const g=__lifeGame.state;return !g.scene.colliders.some(c=>g.player.x-5<c.x+c.w&&g.player.x+5>c.x&&g.player.y-6<c.y+c.h&&g.player.y>c.y)});
   assert.ok(clear,'Interior entrance must be clear: '+id);
   await page.waitForTimeout(250);
@@ -34,10 +34,11 @@ const assert=require('node:assert/strict');
  assert.equal(await page.evaluate(()=>__lifeGame.state.scene.entities.filter(e=>e.homeProjection&&!e.hidden).length),2);
  if(process.env.GAME_SCREENSHOTS)await page.screenshot({path:process.env.GAME_SCREENSHOTS+'/home-at-night.png'});
  // Dawn progresses while the player is indoors; no ghost residents remain in the room.
- await page.evaluate(()=>{__lifeGame.state.settings.timeOfDay='day';});await page.waitForTimeout(100);
+ await page.evaluate(()=>{__lifeGame.state.settings.timeOfDay='dawn';});await page.waitForTimeout(100);
  assert.equal(await page.evaluate(()=>__lifeGame.state.scene.entities.filter(e=>e.homeProjection&&!e.hidden).length),0);
  await page.evaluate(()=>__lifeGame.warp('village'));
- assert.equal(await page.evaluate(()=>__lifeGame.state.scene.entities.filter(e=>e.route&&!e.hidden).length),21);
+ assert.equal(await page.evaluate(()=>__lifeGame.state.scene.entities.filter(e=>e.route&&!e.hidden).length),19);
+ assert.ok(await page.evaluate(()=>__lifeGame.state.villageWorld.entities.filter(e=>e.inside).every(e=>GameStory.routine(e.npcId,__lifeGame.state).sceneId===e.insideScene)));
  // Start a fresh saved game inside a house at night.
  await page.evaluate(()=>{__lifeGame.state.settings.timeOfDay='night';});await page.waitForTimeout(3000);
  await page.evaluate(()=>__lifeGame.warp('village-home-0'));await page.waitForTimeout(200);await page.reload();

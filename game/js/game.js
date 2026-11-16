@@ -43,6 +43,9 @@
     dialogue: null,       // {nodes, index, typing, timer, done}
     time: window.GameSave.load().worldTime || 0,
     villageWorld: null,
+    visitedScenes: new Set(),
+    story: window.GameSave.load().story,
+    journey: window.GameSave.load().journey,
     lastFrame: 0,
     saveTimer: 0,
     settings: window.GameSave.load().settings,
@@ -97,7 +100,7 @@
       const x=cell%cols, y=Math.floor(cell/cols);
       for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
         const nx=x+dx, ny=y+dy, next=ny*cols+nx;
-        if(nx<0 || ny<0 || nx>=cols || ny>=rows || previous.has(next) || !walkable[next]) continue;
+        if(nx<0 || ny<0 || nx>=cols || ny>=rows || previous.has(next) || !walkable[next] || next===e.avoidCell && next!==goal) continue;
         previous.set(next,cell); queue.push(next);
       }
     }
@@ -107,48 +110,118 @@
     path.push({x:sx*TILE+8,y:sy*TILE+12});
     return path.reverse();
   }
+  function residentDoor(sceneId,e) {
+    const door=DATA.scenes.village.interactables.find(z=>z.toScene===sceneId);
+    return door ? door.at : e.nightHome;
+  }
   function syncResidents() {
     if(!G.villageWorld || !G.scene) return;
-    const residents=G.villageWorld.entities.filter(e=>e.route);
+    const residents=G.villageWorld.entities.filter(e=>e.route),occupied=new Set();
     for(const e of residents) e.hidden=!!e.inside;
     for(const e of G.scene.entities) if(e.homeProjection) {
       const resident=residents.find(r=>r.npcId===e.npcId);
-      e.hidden=!(resident && resident.inside && resident.homeScene===G.scene.id);
+      e.hidden=!(resident && resident.inside && (resident.insideScene || resident.homeScene)===G.scene.id);
+      if(!e.hidden) {
+        e.action=resident.action;e.activity=resident.activity;e.insideScene=G.scene.id;
+        const key=G.scene.id+':'+e.action;
+        if(e.spotKey!==key) {
+          const spot=window.ResidentLife.indoorSpot(G.scene,e.npcId,e.action);
+          const cols=G.scene.W/TILE;
+          let best=spot[1]*cols+spot[0];
+          if(occupied.has(best)) best=G.scene.walkable.findIndex((yes,i)=>yes&&!occupied.has(i));
+          e.x=best%cols*TILE+8;e.baseline=Math.floor(best/cols)*TILE+12;e.spotKey=key;
+        }
+        occupied.add(Math.floor((e.baseline-1)/TILE)*G.scene.W/TILE+Math.floor(e.x/TILE));
+      }
     }
   }
   function updateResident(e, dt) {
-    const night = window.LGLandscape && window.LGLandscape.nightAmount(G) > .65;
-    if (e.night !== night) { e.night=night; e.path=[]; e.wanderT=0; e.arrivedHome=false;
-      if (!night) e.inside=false; }
-    if (night && e.inside) { e.walking=false; return; }
-    if (reducedMotion()) {
-      if (night) { e.x=e.nightHome[0]*TILE+8; e.baseline=e.nightHome[1]*TILE+12; e.inside=true; e.arrivedHome=true; }
+    const schedule=window.GameStory.routine(e.npcId,G);
+    const night=schedule ? schedule.period==='night' : window.LGLandscape.nightAmount(G)>.65;
+    const indoors=night ? e.homeScene : schedule && schedule.sceneId!=='village' ? schedule.sceneId : null;
+    if(e.night!==night || (e.schedule&&e.schedule.key)!==(schedule&&schedule.key)) {
+      e.night=night;e.schedule=schedule;e.path=[];e.routeIndex=0;e.wanderT=0;e.arrivedHome=false;
+      window.ResidentBehavior.reset(e);
+    }
+    e.activity=night?'在家休息':schedule?schedule.activity:'在村里走走';
+    e.action=night?'rest':schedule?schedule.action:'walk';
+    if(e.inside) {
+      if((e.insideScene || e.homeScene)===indoors){e.walking=false;return;}
+      const exit=residentDoor(e.insideScene || e.homeScene,e);
+      e.x=exit[0]*TILE+8;e.baseline=exit[1]*TILE+12;
+      e.inside=false;e.insideScene=null;
+    }
+    if(reducedMotion()) {
+      e.walking=false;
+      if(indoors) {const at=residentDoor(indoors,e);e.x=at[0]*TILE+8;e.baseline=at[1]*TILE+12;e.inside=true;e.insideScene=indoors;e.arrivedHome=true;}
+      else if(schedule && e.reducedSchedule!==schedule.key){
+        const at=window.ResidentBehavior.destination(e,G.villageWorld,schedule.route);
+        e.x=at[0]*TILE+8;e.baseline=at[1]*TILE+12;
+        window.ResidentBehavior.personality(e).atActivity=true;
+      }
+      e.reducedSchedule=schedule&&schedule.key;
       return;
     }
-    if (e.wanderT>0) { e.wanderT-=dt; e.walking=false; return; }
-    if (!e.path || !e.path.length) {
-      const destination=night ? e.nightHome : e.route[e.routeIndex++ % e.route.length];
+    if(window.ResidentBehavior.tick(e,G,G.villageWorld,dt,!!indoors))return;
+    if(!e.path || !e.path.length) {
+      const route=schedule && schedule.route.length ? schedule.route : e.route;
+      const destination=indoors?residentDoor(indoors,e):window.ResidentBehavior.destination(e,G.villageWorld,route);
       e.path=npcRoute(e,destination);
-      if (!e.path.length) { e.wanderT=1.5; return; }
+      if(!e.path.length){e.avoidCell=null;e.wanderT=1.5;return;}
+      window.ResidentBehavior.start(e);
     }
-    const next=e.path[0], dx=next.x-e.x, dy=next.y-e.baseline, distance=Math.hypot(dx,dy);
+    followResidentPath(e,dt,G.villageWorld,function(){
+      window.ResidentBehavior.arrive(e,schedule?schedule.holdSeconds:3);
+      if(indoors){e.inside=true;e.insideScene=indoors;e.arrivedHome=true;}
+    });
+  }
+  function followResidentPath(e,dt,scene,onArrival) {
+    const next=e.path[0],dx=next.x-e.x,dy=next.y-e.baseline,distance=Math.hypot(dx,dy);
     if(distance<.7) {
-      e.path.shift(); e.walking=false;
-      if(!e.path.length) { e.wanderT=2+e.bobSeed*.35; if(night) { e.arrivedHome=true; e.inside=true; } }
+      e.path.shift();e.walking=false;
+      if(!e.path.length)onArrival();
       return;
     }
-    const step=Math.min(distance,(e.speed||18)*dt);
-    const nx=e.x+dx/distance*step, ny=e.baseline+dy/distance*step;
-    // Residents are passable, so narrow village paths never become bottlenecks.
-    if (!npcBlocked(e,nx,ny,G.villageWorld)) {
-      e.x=nx; e.baseline=ny; e.walking=true;
-      e.faceDir=Math.abs(dx)>Math.abs(dy) ? (dx>0?'right':'left') : (dy>0?'down':'up');
-    } else { e.path=[]; e.wanderT=1; e.walking=false; }
+    const pace=window.ResidentBehavior.personality(e).legPace||1;
+    const step=Math.min(distance,(e.speed||18)*pace*dt),nx=e.x+dx/distance*step,ny=e.baseline+dy/distance*step;
+    const other=scene.entities.find(r=>r.kind==='npc'&&r!==e&&!r.hidden&&!r.inside&&
+      // Keep right of way while either walker pauses; otherwise both can yield forever.
+      ((!r.route&&!r.streetLife) || e.npcId>r.npcId) && Math.hypot(nx-r.x,ny-r.baseline)<10 &&
+      Math.hypot(nx-r.x,ny-r.baseline)<Math.hypot(e.x-r.x,e.baseline-r.baseline));
+    if(other && e.path.length>1){
+      e.avoidCell=Math.floor((other.baseline-1)/TILE)*(scene.W/TILE)+Math.floor(other.x/TILE);
+      e.path=[];e.wanderT=.35+Math.random()*.45;e.walking=false;return;
+    }
+    if(!npcBlocked(e,nx,ny,scene)){
+      e.x=nx;e.baseline=ny;e.walking=true;
+      e.faceDir=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');
+    }else{e.path=[];e.wanderT=1;e.walking=false;}
   }
   function updateNpc(e, dt) {
-    if (e.hidden || e.route) return;
-    if (e.homeProjection) { e.walking=false; e.faceDir=faceTowards(e); return; }
-    if (G.mode !== 'explore') { e.walking = false; return; }
+    if (e.hidden) return;
+    if (G.mode !== 'explore') {
+      e.walking = false;
+      if(G.mode==='dialogue' && G.interactTarget && G.interactTarget.ent===e)e.faceDir=faceTowards(e);
+      return;
+    }
+    if(e.route)return;
+    if(e.homeProjection || e.streetLife) {
+      if(reducedMotion()){e.walking=false;return;}
+      if(e.homeProjection){
+        if(e.wanderT<=0)window.ResidentBehavior.arrive(e,8);
+        window.ResidentBehavior.personality(e).atActivity=true;
+        window.ResidentBehavior.tick(e,G,G.scene,dt,false);e.walking=false;return;
+      }
+      if(window.ResidentBehavior.tick(e,G,G.scene,dt,false))return;
+      if(!e.path.length){
+        const target=window.ResidentBehavior.destination(e,G.scene,window.LifeWorld.streetAnchors(e,G));
+        e.path=npcRoute(e,target,G.scene);
+        if(!e.path.length){e.avoidCell=null;e.wanderT=1;return;}
+        window.ResidentBehavior.start(e);
+      }
+      followResidentPath(e,dt,G.scene,()=>window.ResidentBehavior.arrive(e,e.streetLife.hold));
+      return;
+    }
     const dxp = G.player.x - e.x;
     const dyp = (G.player.y - 8) - (e.baseline - 8);
     if (Math.hypot(dxp, dyp) < (e.route ? 22 : 70)) {
@@ -269,6 +342,7 @@
       }
     }
     if (window.LGLandscape) window.LGLandscape.decorate(gg, def, legend, PAD);
+    if (window.LGVillageDetails) window.LGVillageDetails.decorate(gg,def,legend,PAD);
     // 地图四边的隐形墙：玩家不能走出原始地图范围
     colliders.push({ x: -2, y: -2, w: W + 4, h: 2 });
     colliders.push({ x: -2, y: H, w: W + 4, h: 2 });
@@ -276,7 +350,12 @@
     colliders.push({ x: W, y: -2, w: 2, h: H + 4 });
 
     // 2. 人物实体
-    const characters = def.characters || [];
+    const characters = (def.characters || []).slice();
+    if(def.household) {
+      for(const resident of DATA.scenes.village.characters.filter(c=>c.route)) {
+        if(!characters.some(c=>c.id===resident.id)) characters.push({id:resident.id,at:def.spawnPoints.default,homeProjection:true});
+      }
+    }
     for (const conf of characters) {
       const cd = (DATA.characters || {})[conf.id];
       if (!cd) continue;
@@ -288,7 +367,7 @@
         label: cd.name, isDemo: !!cd.isDemo, npcId: cd.id,
         faceDir: 'down', facing: null,
         route: conf.route, routeIndex: 0, nightHome: conf.nightHome, homeScene: conf.homeScene, speed: conf.speed, path: [],
-        homeProjection: !!conf.homeProjection,
+        homeProjection: !!conf.homeProjection,streetLife:conf.streetLife,
         // —— 生活行为：出生点漫游 ——
         homeX: px0 + TILE / 2, homeY: py0 + TILE,
         wanderT: 1.5 + Math.random() * 3, walking: false, tx: 0, ty: 0
@@ -298,11 +377,11 @@
         const old=G.villageWorld && G.villageWorld.entities.find(e=>e.npcId===conf.id);
         if(old) ent=old;
         else if(window.LGLandscape.nightAmount(G)>.65) {
-          ent.night=true; ent.inside=true; ent.arrivedHome=true;
+          ent.night=true; ent.inside=true; ent.insideScene=conf.homeScene; ent.arrivedHome=true;
           ent.x=conf.nightHome[0]*TILE+8; ent.baseline=conf.nightHome[1]*TILE+12;
         }
       }
-      if (!conf.route && !conf.homeProjection) colliders.push(ent.collider);
+      if (!conf.route && !conf.homeProjection && !conf.streetLife) colliders.push(ent.collider);
       entities.push(ent);
       // 人物自带对话互动
       interactZones.push({
@@ -365,9 +444,15 @@
       const at = sp[key] || sp['default'] || [Math.floor(cols / 2), Math.floor(rows / 2)];
       spawn = { x: at[0] * TILE + TILE / 2, y: at[1] * TILE + TILE - 4 };
     }
-    // 出生点落在碰撞里时，向下方逐格找一个空位
-    while (hitsAny(colliders, spawn.x - 5, spawn.y - 6, 10, 6) && spawn.y < H) {
-      spawn.y += TILE;
+    if (hitsAny(colliders,spawn.x-5,spawn.y-6,10,6) || spawn.x>=W || spawn.y>=H) {
+      let best=null, distance=Infinity;
+      for(let y=0;y<rows.length;y++)for(let x=0;x<cols;x++){
+        const px=x*TILE+8,py=y*TILE+12;
+        if(hitsAny(colliders,px-5,py-6,10,6))continue;
+        const d=Math.hypot(px-spawn.x,py-spawn.y);
+        if(d<distance){best={x:px,y:py};distance=d;}
+      }
+      if(best)spawn=best;
     }
 
     G.PAD = PAD;
@@ -383,6 +468,14 @@
     const staticColliders = colliders.filter(c => !entities.some(e => e.kind === 'npc' && e.collider === c));
     G.scene.walkable = Array.from({length:cols*rows.length}, (_,i) =>
       !hitsAny(staticColliders, i%cols*TILE+3, Math.floor(i/cols)*TILE+6, 10, 6));
+    for(const e of entities)if(e.streetLife){
+      const cell=Math.floor((e.baseline-1)/TILE)*cols+Math.floor(e.x/TILE);
+      if(!G.scene.walkable[cell]){
+        const at=window.ResidentBehavior.destination(e,G.scene,e.streetLife.anchors);
+        e.x=at[0]*TILE+8;e.baseline=at[1]*TILE+12;
+      }
+      window.ResidentBehavior.reset(e);
+    }
     if (def.id === 'village') G.villageWorld=G.scene;
     syncResidents();
     resize();
@@ -405,7 +498,8 @@
     $('hud-location').textContent = def.name || def.id;
     updateJourney();
     const arrival = $('scene-arrival');
-    arrival.textContent = def.name || def.id;
+    arrival.textContent = G.visitedScenes.has(def.id) ? '' : (def.name || def.id);
+    G.visitedScenes.add(def.id);
     arrival.classList.remove('visible');
     clearTimeout(G.arrivalTimer);
     requestAnimationFrame(function () { arrival.classList.add('visible'); });
@@ -579,11 +673,14 @@
   // ----------------------------------------------------------
   function update(dt) {
     G.time += dt;
+    window.LifeJourney.tick(G);
+    window.LifeWorld.tick(G);
     if (G.mode === 'explore' && !G.transitioning) {
       const [dx, dy] = inputVector();
       const moving = dx !== 0 || dy !== 0;
       G.player.moving = moving;
       if (moving) {
+        document.body.classList.add('experienced-player');
         // 斜向速度归一
         const len = Math.hypot(dx, dy);
         const speed = PLAYER_SPEED * (G.keys.run ? 1.55 : 1);
@@ -600,7 +697,12 @@
         G.player.animT += dt * (G.keys.run ? 1.4 : 1);
         G.player.frame = Math.floor(G.player.animT / 0.16) % 2 + 1;
         G.player.stepT += dt;
-        if (G.player.stepT > 0.3) { G.player.stepT = 0; window.GameAudio.step(); }
+        if (G.player.stepT > 0.3) {
+          G.player.stepT = 0;
+          const tile=(G.scene.def.map[Math.floor(G.player.y/TILE)]||'')[Math.floor(G.player.x/TILE)];
+          const spec=(G.scene.def.legend||{})[tile]||(DATA.scenes.legend||{})[tile]||{};
+          window.GameAudio.step(spec.tile);
+        }
 
         G.save.pos = { x: G.player.x, y: G.player.y };
       } else {
@@ -639,7 +741,7 @@
       // 最近的可互动对象
       let best = null, bestD = INTERACT_RADIUS;
       for (const z of G.scene.interactZones) {
-        if (z.ent && z.ent.hidden) continue;
+        if (z.ent && z.ent.hidden || !window.GameKeepsakes.available(z,G)) continue;
         const d = Math.hypot(z.cx - G.player.x, z.cy - (G.player.y - 8));
         if (d < bestD) { best = z; bestD = d; }
       }
@@ -714,7 +816,9 @@
 
     // 生活细节层：静态杂物（实体之下）
     if (window.LGDetails) window.LGDetails.draw(ctx, 'ground');
+    if (window.LGHomeDetails) window.LGHomeDetails.draw(ctx,G,'ground');
 
+    window.GameStory.draw(ctx,G,G.art);
     // 氛围层：实体之下（水面涟漪等）
     if (window.LGAmbience) window.LGAmbience.draw(ctx, 'ground');
 
@@ -746,23 +850,32 @@
       }
       let img = e.img;
       if (e.kind === 'npc') {
-        img = e.sprite[e.faceDir || 'down'][e.walking ? Math.floor(G.time / .18) % 2 + 1 : 0];
+        const behavior=window.ResidentBehavior.personality(e);
+        img = e.sprite[e.faceDir || 'down'][e.walking && !reducedMotion() ? Math.floor((G.time*behavior.cadence+behavior.phase) / .18) % 2 + 1 : 0];
       }
-      const bob = e.kind === 'npc' && !reducedMotion()
-        ? (Math.sin(G.time / 0.6 + e.bobSeed) > 0 ? -1 : 0) : 0;
+      const bob = e.kind === 'npc' && e.walking && !reducedMotion()
+        ? (Math.sin(G.time / 0.6 + e.behavior.phase) > 0 ? -1 : 0) : 0;
       const obscuresPlayer = e.kind === 'tree' && G.player.y < e.baseline &&
         G.player.y > e.baseline - e.drawH && Math.abs(G.player.x - e.x) < e.drawW / 2;
       ctx.globalAlpha = obscuresPlayer ? .48 : 1;
+      img=window.LifeWorld.pose(e,img,G);
       ctx.drawImage(img, Math.round(e.x - e.drawW / 2 + ox), Math.round(e.baseline - e.drawH + bob));
     }
 
     ctx.globalAlpha = 1;
+    for(const e of list) if(e.kind==='npc'){
+      if(window.ResidentLife)window.ResidentLife.draw(ctx,e,G);
+      window.ResidentBehavior.draw(ctx,e,G);
+    }
+    if(window.LGHomeDetails) window.LGHomeDetails.draw(ctx,G,'top');
+    window.LifeWorld.draw(ctx,G);
 
     // 互动提示标记（在目标上方轻跳）
     const showMarkers = !reducedMotion() ? 1 : 0;
     for (const z of G.scene.interactZones) {
-      if (z.ent && z.ent.hidden) continue;
+      if (z.ent && z.ent.hidden || !window.GameKeepsakes.available(z,G)) continue;
       if (z.memoryId && G.discovered.has(z.memoryId) && z !== G.interactTarget) continue;
+      if (z !== G.interactTarget || G.mode !== 'explore' || G.settings.interactionHints===false) continue;
       if (z.kind === 'npc' && z !== G.interactTarget) continue;
       const mx = z.cx, my = z.cy;
       if (mx < camX - 16 || mx > camX + viewW() + 16) continue;
@@ -771,6 +884,7 @@
       ctx.drawImage(G.art.marker, Math.round(mx - 4), Math.round(my - 26 + bobY));
     }
 
+    window.GameKeepsakes.draw(ctx,G);
     // 氛围层：最上方（飞鸟/蝴蝶/落叶/水花）
     if (window.LGAmbience) window.LGAmbience.draw(ctx, 'top');
 
@@ -786,6 +900,7 @@
       const label = G.scene.def.indoor ? '⌂ 屋内 · '+clock :
         (hour<5 || hour>=20 ? '☾ 夜晚' : hour<8 ? '☀ 清晨' : hour<17 ? '☀ 白天' : '◒ 傍晚')+' · '+clock;
       if ($('world-light').textContent !== label) $('world-light').textContent = label;
+      const dayLabel='第 '+G.journey.day+' 天';if($('world-day').textContent!==dayLabel)$('world-day').textContent=dayLabel;
     }
   }
 
@@ -795,9 +910,9 @@
   function updateHint() {
     const hint = $('hint');
     const t = G.interactTarget;
-    if (!t || (t.ent && t.ent.hidden) || G.mode !== 'explore') { hint.hidden = true; return; }
+    if (!t || (t.ent && t.ent.hidden) || G.mode !== 'explore' || G.settings.interactionHints===false) { hint.hidden = true; return; }
     const isMobile = document.body.classList.contains('touch');
-    hint.textContent = (isMobile ? '点 ● ' : '按 E · ') + (t.hint || '查看');
+    hint.textContent = (isMobile ? '点 ● ' : '按 E · ') + (t.hint || '查看') + (t.ent && t.ent.activity ? ' · '+t.ent.activity : '');
     hint.hidden = false;
   }
 
@@ -806,6 +921,15 @@
     if (!t || (t.ent && t.ent.hidden)) return;
     if (t.kind === 'npc' && t.ent) t.ent.faceDir = faceTowards(t.ent);
     window.GameAudio.blip();
+    const activity=window.LifeJourney.activity(t,G);
+    if(activity){
+      if(activity==='supplies'&&!window.LifeJourney.schoolOpen(G)){
+        openDialogue(null,null,[{text:'文具摊收起来了。先休息到次日清晨，等摊主开门。',end:true,journeyEvent:'schoolMorning'}]);return;
+      }
+      G.activity=activity;openPanel('activity');return;
+    }
+    const storyNodes=window.LifeJourney.dialogue(t,G) || window.GameKeepsakes.dialogue(t,G) || window.GameStory.dialogue(t,G) || window.ResidentBehavior.dialogue(t,G);
+    if(storyNodes) {openDialogue(null,null,storyNodes);return;}
     switch (t.type) {
       case 'passage': return; // 走进过道自动触发，无需按键
       case 'dialogue': openDialogue(t.dialogueId, null); break;
@@ -853,10 +977,11 @@
   // ----------------------------------------------------------
   //  对话
   // ----------------------------------------------------------
-  function openDialogue(dialogueId, memoryIdToUnlock) {
+  function openDialogue(dialogueId, memoryIdToUnlock, customNodes) {
     const dlg = dialogueById(dialogueId);
     let nodes;
-    if (dlg && Array.isArray(dlg.nodes) && dlg.nodes.length) {
+    if(customNodes) { nodes=customNodes; }
+    else if (dlg && Array.isArray(dlg.nodes) && dlg.nodes.length) {
       nodes = dlg.nodes;
     } else {
       nodes = [{ text: '（这段对话还没有写好。等故事整理好后会出现在这里。）', end: true }];
@@ -960,7 +1085,17 @@
     const node = d.nodes[d.index];
     if (d.typing) { finishTyping(); return; }
     if (Array.isArray(node.choices) && node.choices.length) return; // 等选择
-    if (node.end) { closeDialogue(); return; }
+    if (node.end) {
+      if(node.journeyEvent){const event=node.journeyEvent;closeDialogue();finishJourneyEvent(event);return;}
+      if(node.keepsake) { discoverMemory(node.keepsake); queueSave(); }
+      if(Number.isInteger(node.storyAdvance) && node.storyAdvance===G.story.step+1) {
+        G.story.step=node.storyAdvance;
+        if(G.story.step===4) discoverMemory('mem-act-one-stool');
+        updateJourney();queueSave();
+        toast(G.story.step===4?'第一幕完成：树下又有了座位。':'旅途更新：'+window.GameStory.step(G).title);
+      }
+      closeDialogue(); return;
+    }
     window.GameAudio.advance();
     d.index = node.next !== undefined ? node.next : d.index + 1;
     if (d.index >= d.nodes.length) { closeDialogue(); return; }
@@ -1025,6 +1160,14 @@
   //  面板（人生地图 / 回忆手册 / 设置 / 帮助）
   // ----------------------------------------------------------
   let activePanel = null;
+  function finishJourneyEvent(event,choice){
+    const result=window.LifeJourney.apply(event,G,choice);if(!result)return;
+    if(result.memory)discoverMemory(result.memory);
+    G.player.lifeAction={kind:event,until:G.time+2};
+    window.GameAudio.life(event);
+    if(result.scene)loadScene(result.scene,result.spawn,null);
+    updateJourney();queueSave();toast(result.message);
+  }
 
   function openPanel(name) {
     setMenuOpen(false);
@@ -1036,9 +1179,14 @@
     $('hint').hidden = true;
     const body = $('panel-body');
     body.innerHTML = '';
-    if (name === 'map') buildMapPanel(body);
+    if (name === 'story') buildStoryPanel(body);
+    else if (name === 'map') buildMapPanel(body);
     else if (name === 'book') buildBookPanel(body);
     else if (name === 'settings') buildSettingsPanel(body);
+    else if(name==='activity'){
+      body.appendChild(panelHeader('生活片段'));
+      window.LifeJourney.buildActivity(body,G.activity,G,(event,choice)=>{closePanel();finishJourneyEvent(event,choice);});
+    }
     else buildHelpPanel(body);
     $('panel').hidden = false;
     $('panel').scrollTop = 0;
@@ -1068,16 +1216,37 @@
 
   function updateJourney() {
     if (!G.scene) return;
-    const memories = G.scene.interactZones.filter(z => z.memoryId && memoryById(z.memoryId));
-    const next = memories.find(z => !G.discovered.has(z.memoryId));
-    $('journey-title').textContent = next ? '去看看' + next.hint : '沿着小路，继续走走';
-    const found = memories.filter(z => G.discovered.has(z.memoryId)).length;
-    $('journey-progress').textContent = '此地回忆 ' + found + ' / ' + memories.length + ' · 点击查看地图';
+    const objective=window.GameStory.step(G);
+    $('journey-title').textContent=objective.title;
+    $('journey-progress').textContent='第 '+G.journey.day+' 天 · '+(G.story.step<4?'树下的竹凳':G.journey.stage<7?'出发之前':'县城的第一天')+' · 演示故事';
+  }
+
+  function buildStoryPanel(root) {
+    root.appendChild(panelHeader('旅途手记 · 村庄与县城'));
+    root.appendChild(el('p','panel-note','演示故事：用于体验主线玩法，不代表真实人生经历。没有时间限制，夜里也能进屋找人。'));
+    root.appendChild(el('h3','story-objective',window.GameStory.step(G).title));
+    root.appendChild(el('p','help-p',window.GameStory.step(G).hint));
+    const destination=window.GameStory.target(G);
+    if(destination) {
+      const scene=DATA.scenes[destination.sceneId];
+      root.appendChild(el('p','story-location','去这里：'+scene.name));
+    }
+    const inventory=el('div','story-inventory',G.story.step===2||G.story.step===3?'随身物品：一张修好的竹凳':'随身物品：'+(G.story.step===4?'竹凳已放在老槐树下':'暂时没有任务物品'));
+    root.appendChild(inventory);
+    if(G.journey.stage>=4)root.appendChild(el('p','story-inventory',G.journey.stage>=10?'行李：入学通知、手帕和新文具':G.journey.stage>=5?'行李：入学通知、铅笔、旧手帕':'刚收到：入学通知'));
+    const list=el('ol','story-checklist');
+    window.GameStory.steps.slice(0,4).forEach((step,i)=>list.appendChild(el('li',i<G.story.step?'done':'', (i<G.story.step?'✓ ':'')+step.title)));
+    if(G.story.step===4)window.LifeJourney.steps.slice(0,11).forEach((step,i)=>list.appendChild(el('li',i<G.journey.stage?'done':'',(i<G.journey.stage?'✓ ':'')+step.title)));
+    root.appendChild(list);
+    const bonds=el('div','journey-bonds');
+    window.LifeJourney.relationships(G).forEach(r=>bonds.appendChild(el('p','',r.name+' · '+r.status)));root.appendChild(bonds);
+    const mapButton=el('button','btn-pixel','查看当前位置地图');
+    mapButton.addEventListener('click',()=>openPanel('map'));root.appendChild(mapButton);
   }
 
   function buildMapPanel(root) {
     root.appendChild(panelHeader('旅途地图'));
-    root.appendChild(el('p', 'panel-note', '红点是你，浅黄色标记是可以互动的地方。沿路探索，也可以从下方前往已开放的章节。'));
+    root.appendChild(el('p', 'panel-note', '红点是你，金色圆环是当前主线目标（或住户家门），浅黄色标记是互动地点。也可以从下方前往已开放的章节。'));
     const map = el('canvas', 'journey-map');
     map.setAttribute('role', 'img');
     map.setAttribute('aria-label', (G.scene.def.name || '') + '地图；下方提供地点文字列表');
@@ -1085,7 +1254,7 @@
     root.appendChild(map);
     const places = el('div', 'map-places');
     for (const z of G.scene.interactZones) {
-      if (z.ent && z.ent.hidden) continue;
+      if (z.ent && z.ent.hidden || !window.GameKeepsakes.available(z,G)) continue;
       places.appendChild(el('span', '', (z.memoryId && G.discovered.has(z.memoryId) ? '✓ ' : '· ') + z.hint));
     }
     root.appendChild(places);
@@ -1228,7 +1397,7 @@
     dayRow.appendChild(el('span', null, '村庄时段'));
     const daySelect = el('select');
     daySelect.setAttribute('aria-label', '村庄时段');
-    for (const [value,label] of [['auto','自动昼夜交替'],['dawn','清晨'],['day','白天'],['dusk','傍晚'],['night','夜晚']]) {
+    for (const [value,label] of [['auto','自动昼夜交替'],['dawn','清晨'],['morning','早上'],['day','白天'],['dusk','傍晚'],['night','夜晚']]) {
       const option = el('option', '', label); option.value=value; daySelect.appendChild(option);
     }
     daySelect.value = G.settings.timeOfDay || (G.settings.dayCycle === false ? 'day' : 'auto');
@@ -1238,6 +1407,10 @@
     dayRow.appendChild(daySelect); root.appendChild(dayRow);
     root.appendChild(el('p','panel-note','自动模式约 8 分钟走过一天。夜里窗户和路灯会亮起，村民沿巷道走进各自家中；可随时切换时段。'));
 
+    const hintsRow=el('label','setting-row'),hintsInput=el('input');
+    hintsInput.type='checkbox';hintsInput.checked=G.settings.interactionHints!==false;
+    hintsInput.addEventListener('change',function(){G.settings.interactionHints=hintsInput.checked;queueSave();updateHint();});
+    hintsRow.appendChild(hintsInput);hintsRow.appendChild(el('span',null,'显示附近互动提示（关闭后仍可按 E 互动）'));root.appendChild(hintsRow);
     const motionRow = el('label', 'setting-row');
     const motionChk = el('input');
     motionChk.type = 'checkbox';
@@ -1273,6 +1446,8 @@
       window.GameSave.reset();
       G.discovered = new Set();
       G.save = window.GameSave.load();
+      G.story=G.save.story;
+      G.time=0;G.journey=window.LifeJourney.defaults();
       G.save.seenIntro = false;
       window.GameAudio.close();
       closePanel();
@@ -1353,7 +1528,7 @@
       window.GameSave.save({
         sceneId: G.save.sceneId, pos: { x: G.player.x, y: G.player.y },
         discovered: G.save.discovered, settings: G.settings,
-        worldTime: G.time, seenIntro: G.save.seenIntro
+        story: G.story, journey: G.journey, worldTime: G.time, seenIntro: G.save.seenIntro
       });
     }, 150);
   }
@@ -1362,7 +1537,7 @@
     window.GameSave.save({
       sceneId: G.save.sceneId, pos: { x: G.player.x, y: G.player.y },
       discovered: G.save.discovered, settings: G.settings,
-      worldTime: G.time, seenIntro: G.save.seenIntro
+      story: G.story, journey: G.journey, worldTime: G.time, seenIntro: G.save.seenIntro
     });
   });
   document.addEventListener('visibilitychange', function () {
@@ -1371,7 +1546,7 @@
       window.GameSave.save({
         sceneId: G.save.sceneId, pos: { x: G.player.x, y: G.player.y },
         discovered: G.save.discovered, settings: G.settings,
-        worldTime: G.time, seenIntro: G.save.seenIntro
+        story: G.story, journey: G.journey, worldTime: G.time, seenIntro: G.save.seenIntro
       });
     }
   });
@@ -1484,7 +1659,16 @@
       if (!e.target.closest('.game-topbar')) setMenuOpen(false);
     });
     $('btn-map').addEventListener('click', function () { openPanel('map'); });
-    $('journey-note').addEventListener('click', function () { openPanel('map'); });
+    $('btn-story').addEventListener('click',function(){openPanel('story');});
+    $('journey-note').addEventListener('click', function () { openPanel('story'); });
+    function syncJournal() {
+      const open=G.settings.journalCollapsed===false;
+      $('journey-note').hidden=!open;
+      $('journey-toggle').setAttribute('aria-expanded',String(open));
+      $('journey-toggle').setAttribute('aria-label',open?'收起旅途手记':'展开旅途手记');
+    }
+    $('journey-toggle').addEventListener('click',function(){G.settings.journalCollapsed=G.settings.journalCollapsed===false;syncJournal();queueSave();});
+    syncJournal();
     canvas.addEventListener('pointerdown', function () { if (G.mode === 'explore') canvas.focus(); });
     // 顶部按钮
     $('btn-book').addEventListener('click', function () {
@@ -1523,6 +1707,7 @@
     requestAnimationFrame(frame);
 
     if (G.save.seenIntro) {
+      document.body.classList.add('experienced-player');
       G.mode = 'explore';
       toast('欢迎回来，继续你的探索吧。');
     } else {

@@ -97,7 +97,7 @@ window.LGLandscape = (function () {
     }
     ctx.restore();
   }
-  const periods = {dawn:.26, day:.48, dusk:.76, night:.94};
+  const periods = {dawn:.26, morning:.30, day:.48, dusk:.76, night:.94};
   function daylight(state) {
     if (Object.hasOwn(periods,state.settings.timeOfDay)) return periods[state.settings.timeOfDay];
     if (state.settings.dayCycle === false || state.settings.reducedMotion === true ||
@@ -163,17 +163,20 @@ window.LGLandscape = (function () {
     canvas.width = def.map[0].length * 4; canvas.height = def.map.length * 4;
     const ctx = canvas.getContext('2d');
     const colors = { path:'#d8b47d', water:'#659ea7', shore:'#b4c38e', roof:'#ab6750', roofSlate:'#6c8290', roofMoss:'#839263',
-      wall:'#ddcda3', floor:'#c8a26e', iwall:'#786651', asphalt:'#96968a', soil:'#9b7750', bridge:'#bb986a' };
+      wall:'#ddcda3', floor:'#c8a26e', iwall:'#786651', asphalt:'#96968a', soil:'#9b7750', bridge:'#bb986a', yard:'#a5a28e' };
     def.map.forEach(function (line, y) { Array.from(line).forEach(function (_, x) {
       const s = terrain(def, legend, x, y);
       ctx.fillStyle = s.entity === 'tree' ? '#4d7853' : colors[s.tile] || '#99b975';
       ctx.fillRect(x * 4, y * 4, 4, 4);
     }); });
     state.scene.interactZones.forEach(function (z) {
-      if(z.ent && z.ent.hidden) return;
+      if(z.ent && z.ent.hidden || window.GameKeepsakes && !window.GameKeepsakes.available(z,state)) return;
       ctx.fillStyle = z.memoryId && state.discovered.has(z.memoryId) ? '#547855' : '#ffe4a1';
       ctx.fillRect(z.cx / T * 4 - 1, z.cy / T * 4 - 1, 3, 3);
     });
+    const goal=window.GameStory && window.GameStory.target(state);
+    const point=goal && (goal.sceneId===state.scene.id ? goal : state.scene.id==='village' ? goal.entry : null);
+    if(point) {ctx.strokeStyle='#ffcd4b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(point.x/T*4,point.y/T*4,5,0,Math.PI*2);ctx.stroke();}
     const x = state.player.x / T * 4, y = state.player.y / T * 4;
     ctx.fillStyle = '#563a35'; ctx.fillRect(x - 3, y - 3, 7, 7);
     ctx.fillStyle = '#fff8e3'; ctx.fillRect(x - 2, y - 2, 5, 5);

@@ -15,10 +15,13 @@ window.GameSave = (function () {
       version: SAVE_VERSION,
       sceneId: null,
       pos: null,                 // {x, y} 逻辑像素（场景内绝对坐标）
-      discovered: [],            // 已收录回忆的 id 列表
+      discovered: [],
+      story: {step: 0},            // 已收录回忆的 id 列表
+      journey: window.LifeJourney.defaults(),
       settings: {
         sound: true,
         dayCycle: true,
+        journalCollapsed: true,
         reducedMotion: null       // null = 跟随系统 prefers-reduced-motion
       },
       seenIntro: false,
@@ -43,6 +46,8 @@ window.GameSave = (function () {
       if (typeof out.sceneId !== 'string') out.sceneId = null;
       if (!out.pos || typeof out.pos.x !== 'number' || typeof out.pos.y !== 'number') out.pos = null;
       out.worldTime = Number.isFinite(data.worldTime) && data.worldTime >= 0 ? data.worldTime : 0;
+      out.story = {step: Number.isInteger(data.story && data.story.step) && data.story.step >= 0 && data.story.step <= 4 ? data.story.step : 0};
+      out.journey = window.LifeJourney.normalize(data.journey);
       out.version = SAVE_VERSION;
       return out;
     } catch (e) {
@@ -58,6 +63,8 @@ window.GameSave = (function () {
         pos: state.pos ? { x: Math.round(state.pos.x), y: Math.round(state.pos.y) } : null,
         discovered: Array.from(state.discovered || []),
         settings: state.settings,
+        story: state.story || {step: 0},
+        journey: window.LifeJourney.normalize(state.journey),
         seenIntro: !!state.seenIntro,
         worldTime: state.worldTime || 0,
         updatedAt: Date.now()

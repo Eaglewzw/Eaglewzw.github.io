@@ -18,6 +18,7 @@
     <button id="btn-menu" class="btn-pixel menu-toggle" aria-label="游戏菜单" aria-expanded="false" aria-controls="game-menu"><span aria-hidden="true">☰</span> 菜单</button>
     <div class="game-brand">来时的路<small>VERSER · 人生探索</small></div>
     <nav id="game-menu" class="game-hud" aria-label="游戏功能" hidden>
+      <button id="btn-story" class="btn-pixel" aria-label="打开旅途手记">✉<span>旅途手记</span></button>
       <button id="btn-map"    class="btn-pixel" aria-label="打开人生地图">🗺<span>人生地图</span></button>
       <button id="btn-book"   class="btn-pixel" aria-label="打开回忆手册">📖<span>回忆手册</span><em id="book-badge" hidden></em></button>
       <button id="btn-help"   class="btn-pixel" aria-label="帮助与文字目录">❓<span>帮助</span></button>
@@ -26,8 +27,9 @@
     </nav>
   </header>
 
-  <div class="world-card"><span class="world-eyebrow">沿着记忆，慢慢走</span><div id="hud-location">正在载入…</div><div class="world-weather"><span id="world-light">☀ 午后 · 微风</span><span>自由探索</span></div></div>
-  <button id="journey-note" class="journey-note" aria-label="查看当前探索提示，打开地图"><span>旅途手记</span><strong id="journey-title">在村子里走一走</strong><small id="journey-progress">去听听这里的故事</small></button>
+  <div class="world-card"><span class="world-eyebrow">沿着记忆，慢慢走</span><div id="hud-location">正在载入…</div><div class="world-weather"><span id="world-light">☀ 午后 · 微风</span><span id="world-day">第 1 天</span></div></div>
+  <button id="journey-toggle" class="journal-toggle btn-pixel" aria-label="展开旅途手记" aria-expanded="false" aria-controls="journey-note">✎ 手记</button>
+  <button id="journey-note" class="journey-note" aria-label="查看当前旅途目标" hidden><span>旅途手记</span><strong id="journey-title">在村子里走一走</strong><small id="journey-progress">去听听这里的故事</small></button>
   <div id="scene-arrival" class="scene-arrival" aria-live="polite"></div>
   <div class="keyboard-guide"><kbd>W A S D</kbd> 移动 <kbd>Shift</kbd> 奔跑 <kbd>E</kbd> 互动 <kbd>M</kbd> 地图</div>
 
@@ -54,7 +56,7 @@
     <div class="intro-card">
       <h1>来时的路</h1>
       <p class="intro-sub">一段人生，从一个小村庄开始</p>
-      <p>沿着土路走进村庄，听一阵风，翻一件旧物。散落在这里的故事，会一页页收进你的旅途手册。</p>
+      <p>第一幕 · 树下的一张竹凳。先去和种菜的阿姨聊聊，帮邻居跑一趟腿，再经历做饭、告别和去县城上学的故事。目标随时可从「菜单 → 旅途手记」查看。</p>
       <div class="intro-keys">
         <b>移动</b>：WASD / 方向键（手机端用左下角方向键）<br>
         <b>互动</b>：靠近闪光的对象，按 E 或空格（手机端按右下 ● ）<br>
@@ -119,14 +121,24 @@
 <script src="/game/data/pack-village.js"></script>
 <script src="/game/data/pack-county.js"></script>
 <script src="/game/data/pack-city.js"></script>
+<script src="/game/data/county-life.js"></script>
 <script src="/game/data/village-life.js"></script>
 <script src="/game/data/village-homes.js"></script>
+<script src="/game/data/act-one.js"></script>
+<script src="/game/js/life-journey.js"></script>
 <script src="/game/js/sprites.js"></script>
 <script src="/game/js/ambience.js"></script>
 <script src="/game/js/details.js"></script>
 <script src="/game/js/audio.js"></script>
 <script src="/game/js/save.js"></script>
 <script src="/game/js/landscape.js"></script>
+<script src="/game/js/home-details.js"></script>
+<script src="/game/js/village-details.js"></script>
+<script src="/game/js/resident-life.js"></script>
+<script src="/game/js/resident-behavior.js"></script>
+<script src="/game/js/life-world.js"></script>
+<script src="/game/js/story.js"></script>
+<script src="/game/js/keepsakes.js"></script>
 <script src="/game/js/game.js"></script>
 </body>
 </html>
